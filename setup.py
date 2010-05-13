@@ -1,0 +1,46 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+import sys
+import os
+
+from setuptools import setup, find_packages
+
+
+version = '0.1'
+
+setup(name='g-pypi2',
+    version=version,
+    description="g-pypi2 manages ebuilds for Gentoo Linux using information in PyPi (Python Package Index)",
+    long_description="""""",
+    keywords='gentoo linux distribution ebuild package pypi',
+    author='Domen Kozar',
+    author_email='domen@dev.si',
+    url='http://bitbucket.org/iElectric/g-pypi2/',
+    license='BSD',
+    include_package_data=True,
+    zip_safe=False,
+    test_suite='nose.collector',
+    packages=find_packages(exclude=['ez_setup', 'examples', 'tests']),
+    classifiers=[
+        'Topic :: Software Development :: Build Tools',
+        'Topic :: System :: Software Distribution',
+        'License :: OSI Approved :: BSD License',
+        'Intended Audience :: Developers',
+        'Development Status :: 4 - Beta',
+        'Programming Language :: Python',
+        'Operating System :: Unix',
+        'Environment :: Console',
+    ],
+    install_requires=[
+        'unittest2',
+        'mako',
+        'yolk',
+    ],
+    tests_require=[
+        'nose',
+    ],
+    extras_require={
+        'docs': ["Sphinx"],
+    },
+)
