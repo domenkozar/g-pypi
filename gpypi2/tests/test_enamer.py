@@ -6,7 +6,7 @@ from gpypi2.enamer import (is_valid_uri,
                            get_vars,
                            parse_sourceforge_uri)
 
-from tests import *
+from gpypi2.tests import *
 
 
 class TestEnamer(BaseTestCase):
