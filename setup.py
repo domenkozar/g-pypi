@@ -21,7 +21,7 @@ setup(name='g-pypi2',
     include_package_data=True,
     zip_safe=False,
     test_suite='nose.collector',
-    packages=find_packages(exclude=['ez_setup', 'examples', 'tests']),
+    packages=find_packages(),
     classifiers=[
         'Topic :: Software Development :: Build Tools',
         'Topic :: System :: Software Distribution',
