@@ -1,5 +1,5 @@
 Python API
-----------
+##########
 
 :mod:`gpypi2` -- Main package 
 *****************************
@@ -22,4 +22,4 @@ Python API
 :mod:`gpypi2.tests.enamer`
 ==========================
 
-.. automodule:: gpypi2.tests
+.. automodule:: gpypi2.tests.test_enamer
