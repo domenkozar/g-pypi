@@ -8,7 +8,8 @@
 
 .. moduleauthor:: Domen Kožar [iElectric] <domen@dev.si>
 .. module:: gpypi2
-    :synopsis: ...
+    :platform: Everything that Gentoo supports.
+    :synopsis: g-pypi2 manages ebuilds for Gentoo Linux using information in PyPi (Python Package Index)
 
 :Author: Domen Kožar
 :Source code: `Bitbucket.org source browser <http://bitbucket.org/iElectric/g-pypi2/src>`_
