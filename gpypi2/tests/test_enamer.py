@@ -1,16 +1,57 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+"""
 
-from gpypi2.enamer import (is_valid_uri,
-                           get_filename,
-                           get_vars,
-                           parse_sourceforge_uri)
+Test ``get_vars`` with all types of URI's we can come up with.
 
+Note:
+-----
+
+up_pn and up_pv are upstream's package name and package version respectively
+and not actually used in an ebuild. These are the names returned
+from yolklib/PyPI.
+
+
+"""
+
+from gpypi2.enamer import *
 from gpypi2.tests import *
 
 
 class TestEnamer(BaseTestCase):
     """"""
+
+    def test_get_filename(self):
+        """Return filename minus extension from src_uri"""
+        self.assertEqual(get_filename("http://www.foo.com/pkgfoo-1.0.tbz2"), "pkgfoo-1.0")
+        self.assertEqual(get_filename("http://www.foo.com/PKGFOO-1.0.tbz2"), "PKGFOO-1.0")
+        self.assertEqual(get_filename("http://www.foo.com/pkgfoo_1.0.tbz2"), "pkgfoo_1.0")
+        self.assertEqual(get_filename("http://www.foo.com/PKGFOO_1.0.tbz2"), "PKGFOO_1.0")
+        self.assertEqual(get_filename("http://www.foo.com/pkg-foo-1.0_beta1.tbz2"), "pkg-foo-1.0_beta1")
+        self.assertEqual(get_filename("http://www.foo.com/pkg_foo-1.0lawdy.tbz2"), "pkg_foo-1.0lawdy")
+        self.assertEqual(get_filename("http://internap.dl.sourceforge.net/sourceforge/abeni/abeni-0.0.22.tar.gz"),
+            "abeni-0.0.22")
+        self.assertEqual(get_filename("http://internap.dl.sourceforge.net/sourceforge/dummy/StupidName_0.2.tar.gz"),
+            "StupidName_0.2")
+
+    def test_strip_ext(self):
+        """Strip extension tests"""
+        self.assertEqual(strip_ext("test.txt"), 'test.txt')
+        self.assertEqual(strip_ext("test.zip"), 'test')
+        self.assertEqual(strip_ext("/path/test.zip"), '/path/test')
+        self.assertEqual(strip_ext("/path/test.zip.tar.gz"), '/path/test.zip')
+        self.assertEqual(strip_ext("/path/test.zip.tar.out"), '/path/test.zip.tar.out')
+
+    def test_is_valid_uri(self):
+        """Check if URI's addressing scheme is valid"""
+        self.assertTrue(is_valid_uri('http://foo.com/foo-1.0.tbz2'))
+        self.assertTrue(is_valid_uri('ftp://foo.com/foo-1.0.tbz2'))
+        self.assertTrue(is_valid_uri('mirror://sourceforge/foo-1.0.tbz2'))
+        self.assertTrue(is_valid_uri('http://foo.com/foo-1.0.tbz2#md5=2E3AF09'))
+        self.assertTrue(is_valid_uri('svn://foo.com/trunk/foo'))
+        self.assertTrue(is_valid_uri('http://www.themarkedmen.com/'))
+
+        self.assertFalse(is_valid_uri('The Marked Men'))
 
     def test_parse_sourceforge_uri(self):
         """ Convert sourceforge URI to portage mirror URI """
@@ -34,47 +75,6 @@ class TestEnamer(BaseTestCase):
             ),
         ):
             self.assertEqual(parse_sourceforge_uri(url), mirror)
-
-
-    def test_is_valid_uri(self):
-        """Check if URI's addressing scheme is valid"""
-        self.assertTrue(is_valid_uri('http://foo.com/foo-1.0.tbz2'))
-        self.assertTrue(is_valid_uri('ftp://foo.com/foo-1.0.tbz2'))
-        self.assertTrue(is_valid_uri('mirror://sourceforge/foo-1.0.tbz2'))
-        self.assertTrue(is_valid_uri('http://foo.com/foo-1.0.tbz2#md5=2E3AF09'))
-        self.assertTrue(is_valid_uri('svn://foo.com/trunk/foo'))
-        self.assertTrue(is_valid_uri('http://www.themarkedmen.com/'))
-
-        self.assertFalse(is_valid_uri('The Marked Men'))
-
-    def test_get_filename(self):
-        """Return filename minus extension from src_uri"""
-        self.assertEqual(get_filename("http://www.foo.com/pkgfoo-1.0.tbz2"), "pkgfoo-1.0")
-        self.assertEqual(get_filename("http://www.foo.com/PKGFOO-1.0.tbz2"), "PKGFOO-1.0")
-        self.assertEqual(get_filename("http://www.foo.com/pkgfoo_1.0.tbz2"), "pkgfoo_1.0")
-        self.assertEqual(get_filename("http://www.foo.com/PKGFOO_1.0.tbz2"), "PKGFOO_1.0")
-        self.assertEqual(get_filename("http://www.foo.com/pkg-foo-1.0_beta1.tbz2"), "pkg-foo-1.0_beta1")
-        self.assertEqual(get_filename("http://www.foo.com/pkg_foo-1.0lawdy.tbz2"), "pkg_foo-1.0lawdy")
-        self.assertEqual(get_filename("http://internap.dl.sourceforge.net/sourceforge/abeni/abeni-0.0.22.tar.gz"),
-            "abeni-0.0.22")
-        self.assertEqual(get_filename("http://internap.dl.sourceforge.net/sourceforge/dummy/StupidName_0.2.tar.gz"),
-            "StupidName_0.2")
-
-
-    test_get_vars_docs = \
-        """
-
-        Test ``get_vars`` with all types of URI's we can come up with.
-
-        Note:
-        -----
-
-        up_pn and up_pv are upstream's package name and package version respectively
-        and not actually used in an ebuild. These are the names returned
-        from yolklib/PyPI.
-
-
-        """
 
     def test_get_vars1(self):
         """

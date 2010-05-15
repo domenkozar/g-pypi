@@ -45,6 +45,7 @@ a python package to ebuild.
 
 import urlparse
 import re
+import os
 
 from portage import pkgsplit
 
@@ -63,33 +64,39 @@ def get_filename(uri):
     Return file name minus extension from src_uri
     e.g. http://somesite.com/foobar-1.0.tar.gz will yield foobar-1.0
 
-    @param uri: URI to package with no variables substitution
-    @type uri: string
-
-    @returns: string
+    :param uri: URI to package with no variables substitution
+    :type uri: string
+    :returns: string
 
     """
     path = urlparse.urlparse(uri)[2]
     path = path.split('/')
-    return strip_ext(path[len(path)-1])
+    return strip_ext(path[-1])
 
-def strip_ext(fname):
-    """Strip possible extensions from filename."""
+def strip_ext(path):
+    """Strip possible extensions from filename.
+
+    Supported extensions: zip, tgz, tar.gz, tar.bz2, tbz2
+
+    :param path: Filesystem path to a file.
+    :type path: string
+    :returns: string
+
+    """
     valid_extensions = [".zip", ".tgz", ".tar.gz", ".tar.bz2", ".tbz2"]
     for ext in valid_extensions:
-        if fname.endswith(ext):
-            fname = fname.replace(ext, "")
-            break
-    return fname
+        if path.endswith(ext):
+            return path[:-len(ext)]
+    return path
 
 def is_valid_uri(uri):
     """
     Check if URI's addressing scheme is valid
 
-    @param uri: URI to pacakge with no variable substitution
-    @type uri: string
+    :param uri: URI to pacakge with no variable substitution
+    :type uri: string
 
-    @returns: True or False
+    :returns: boolean
     """
     if uri.startswith("http:") or uri.startswith("ftp:") or \
             uri.startswith("mirror:") or uri.startswith("svn:"):
@@ -99,14 +106,13 @@ def is_valid_uri(uri):
 
 def parse_sourceforge_uri(uri):
     """
-    Change URI to mirror://sourceforge format
-    Also determines a homepage string which can be used if the metadata 
-    doesn't have Home_page
+    Change URI to mirror://sourceforge format.
+    Also determines a homepage string which can be used if the metadata
+    doesn't have Home_page.
 
-    @param uri: URI to pacakge with no variable substitution
-    @type uri: string
-
-    @returns: tuple (uri string, homepage string)
+    :param uri: URI to pacakage with no variable substitution
+    :type uri: string
+    :returns: tuple: (uri string, homepage string)
     """
     uri_out = homepage = ""
     tst_uri = urlparse.urlparse(uri)
@@ -261,23 +267,41 @@ def sanitize_uri(uri):
     e.g. http://downloads.sourceforge.net/pythonreports/PythonReports-0.3.1.tar.gz?modtime=1182702645&big_mirror=0
     would have everything after '?' stripped
 
-    @param uri: URI to pacakge with no variable substitution
-    @type uri: string
-
-    @returns: string
-
+    :param uri: URI to pacakge with no variable substitution
+    :type uri: string
+    :returns: string
 
     """
+    # TODO: ?
     return uri
 
 def get_vars(uri, up_pn, up_pv, pn="", pv="", my_pn="", my_pv=""):
     """
     Determine P* and MY_* variables
 
-    Don't modify this to accept new URI schemes without writing new 
+    Don't modify this to accept new URI schemes without writing new
     test_enamer unit tests
 
     This function makes me weep and gives me nightmares.
+
+    :param uri:
+    :param up_pn:
+    :param up_pv:
+    :param pn:
+    :param pv:
+    :param my_pn:
+    :param my_pv:
+    :param my_pv:
+    :type uri: string
+    :type up_pn:
+    :type up_pv:
+    :type pn:
+    :type pv:
+    :type my_pn:
+    :type my_pv:
+    :type my_pv:
+    :returns: dict
+
 
     """
     my_p = my_p_raw = ""
@@ -378,7 +402,12 @@ def get_vars(uri, up_pn, up_pv, pn="", pv="", my_pn="", my_pv=""):
             }
 
 def get_src_uri(uri):
-    """Return src_uri"""
+    """Return src_uri
+
+    :param uri:
+    :type uri:
+    :returns: tuple (src_uri, my_p, my_p_raw)
+    """
     my_p = my_p_raw = ''
     if is_good_filename(uri):
         src_uri, pn, pv = get_components(uri)
