@@ -39,6 +39,8 @@ setup(name='g-pypi2',
     ],
     tests_require=[
         'nose',
+        'mocker',
+        'ScriptTest',
     ],
     extras_require={
         'docs': ["Sphinx"],

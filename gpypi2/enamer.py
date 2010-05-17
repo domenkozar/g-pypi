@@ -206,6 +206,7 @@ def bad_pv(up_pn, up_pv, pn="", pv="", my_pn="", my_pv=""):
     _rc
     release
     _p
+
     """
     my_p = ""
     suf_matches = {
@@ -301,7 +302,6 @@ def get_vars(uri, up_pn, up_pv, pn="", pv="", my_pn="", my_pv=""):
     :type my_pv:
     :type my_pv:
     :returns: dict
-
 
     """
     my_p = my_p_raw = ""
@@ -407,6 +407,7 @@ def get_src_uri(uri):
     :param uri:
     :type uri:
     :returns: tuple (src_uri, my_p, my_p_raw)
+
     """
     my_p = my_p_raw = ''
     if is_good_filename(uri):
