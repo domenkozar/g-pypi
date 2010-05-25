@@ -23,35 +23,35 @@ class TestEnamer(BaseTestCase):
 
     def test_get_filename(self):
         """Return filename minus extension from src_uri"""
-        self.assertEqual(get_filename("http://www.foo.com/pkgfoo-1.0.tbz2"), "pkgfoo-1.0")
-        self.assertEqual(get_filename("http://www.foo.com/PKGFOO-1.0.tbz2"), "PKGFOO-1.0")
-        self.assertEqual(get_filename("http://www.foo.com/pkgfoo_1.0.tbz2"), "pkgfoo_1.0")
-        self.assertEqual(get_filename("http://www.foo.com/PKGFOO_1.0.tbz2"), "PKGFOO_1.0")
-        self.assertEqual(get_filename("http://www.foo.com/pkg-foo-1.0_beta1.tbz2"), "pkg-foo-1.0_beta1")
-        self.assertEqual(get_filename("http://www.foo.com/pkg_foo-1.0lawdy.tbz2"), "pkg_foo-1.0lawdy")
-        self.assertEqual(get_filename("http://internap.dl.sourceforge.net/sourceforge/abeni/abeni-0.0.22.tar.gz"),
+        self.assertEqual(Enamer.get_filename("http://www.foo.com/pkgfoo-1.0.tbz2"), "pkgfoo-1.0")
+        self.assertEqual(Enamer.get_filename("http://www.foo.com/PKGFOO-1.0.tbz2"), "PKGFOO-1.0")
+        self.assertEqual(Enamer.get_filename("http://www.foo.com/pkgfoo_1.0.tbz2"), "pkgfoo_1.0")
+        self.assertEqual(Enamer.get_filename("http://www.foo.com/PKGFOO_1.0.tbz2"), "PKGFOO_1.0")
+        self.assertEqual(Enamer.get_filename("http://www.foo.com/pkg-foo-1.0_beta1.tbz2"), "pkg-foo-1.0_beta1")
+        self.assertEqual(Enamer.get_filename("http://www.foo.com/pkg_foo-1.0lawdy.tbz2"), "pkg_foo-1.0lawdy")
+        self.assertEqual(Enamer.get_filename("http://internap.dl.sourceforge.net/sourceforge/abeni/abeni-0.0.22.tar.gz"),
             "abeni-0.0.22")
-        self.assertEqual(get_filename("http://internap.dl.sourceforge.net/sourceforge/dummy/StupidName_0.2.tar.gz"),
+        self.assertEqual(Enamer.get_filename("http://internap.dl.sourceforge.net/sourceforge/dummy/StupidName_0.2.tar.gz"),
             "StupidName_0.2")
 
     def test_strip_ext(self):
         """Strip extension tests"""
-        self.assertEqual(strip_ext("test.txt"), 'test.txt')
-        self.assertEqual(strip_ext("test.zip"), 'test')
-        self.assertEqual(strip_ext("/path/test.zip"), '/path/test')
-        self.assertEqual(strip_ext("/path/test.zip.tar.gz"), '/path/test.zip')
-        self.assertEqual(strip_ext("/path/test.zip.tar.out"), '/path/test.zip.tar.out')
+        self.assertEqual(Enamer.strip_ext("test.txt"), 'test.txt')
+        self.assertEqual(Enamer.strip_ext("test.zip"), 'test')
+        self.assertEqual(Enamer.strip_ext("/path/test.zip"), '/path/test')
+        self.assertEqual(Enamer.strip_ext("/path/test.zip.tar.gz"), '/path/test.zip')
+        self.assertEqual(Enamer.strip_ext("/path/test.zip.tar.out"), '/path/test.zip.tar.out')
 
     def test_is_valid_uri(self):
         """Check if URI's addressing scheme is valid"""
-        self.assertTrue(is_valid_uri('http://foo.com/foo-1.0.tbz2'))
-        self.assertTrue(is_valid_uri('ftp://foo.com/foo-1.0.tbz2'))
-        self.assertTrue(is_valid_uri('mirror://sourceforge/foo-1.0.tbz2'))
-        self.assertTrue(is_valid_uri('http://foo.com/foo-1.0.tbz2#md5=2E3AF09'))
-        self.assertTrue(is_valid_uri('svn://foo.com/trunk/foo'))
-        self.assertTrue(is_valid_uri('http://www.themarkedmen.com/'))
+        self.assertTrue(Enamer.is_valid_uri('http://foo.com/foo-1.0.tbz2'))
+        self.assertTrue(Enamer.is_valid_uri('ftp://foo.com/foo-1.0.tbz2'))
+        self.assertTrue(Enamer.is_valid_uri('mirror://sourceforge/foo-1.0.tbz2'))
+        self.assertTrue(Enamer.is_valid_uri('http://foo.com/foo-1.0.tbz2#md5=2E3AF09'))
+        self.assertTrue(Enamer.is_valid_uri('svn://foo.com/trunk/foo'))
+        self.assertTrue(Enamer.is_valid_uri('http://www.themarkedmen.com/'))
 
-        self.assertFalse(is_valid_uri('The Marked Men'))
+        self.assertFalse(Enamer.is_valid_uri('The Marked Men'))
 
     def test_parse_sourceforge_uri(self):
         """ Convert sourceforge URI to portage mirror URI """
@@ -74,7 +74,7 @@ class TestEnamer(BaseTestCase):
                 ('', '')
             ),
         ):
-            self.assertEqual(parse_sourceforge_uri(url), mirror)
+            self.assertEqual(Enamer.parse_sourceforge_uri(url), mirror)
 
     def test_get_vars1(self):
         """
@@ -95,7 +95,7 @@ class TestEnamer(BaseTestCase):
              'my_p_raw': '',
              'src_uri': 'http://www.foo.com/${P}.tbz2',
              }
-        results = get_vars(uri, up_pn, up_pv)
+        results = Enamer.get_vars(uri, up_pn, up_pv)
         self.assertEqual(correct, results)
 
     def test_get_vars2(self):
@@ -116,7 +116,7 @@ class TestEnamer(BaseTestCase):
              'my_p_raw': 'PkgFoo-1.0',
              'src_uri': 'http://www.foo.com/${MY_P}.tbz2',
              }
-        results = get_vars(uri, up_pn, up_pv)
+        results = Enamer.get_vars(uri, up_pn, up_pv)
         self.assertEqual(correct, results)
 
     def test_get_vars3(self):
@@ -137,7 +137,7 @@ class TestEnamer(BaseTestCase):
              'my_p_raw': '',
              'src_uri': 'http://www.foo.com/${P}.tbz2',
              }
-        results = get_vars(uri, up_pn, up_pv)
+        results = Enamer.get_vars(uri, up_pn, up_pv)
         self.assertEqual(correct, results)
 
     def test_get_vars4(self):
@@ -160,7 +160,7 @@ class TestEnamer(BaseTestCase):
              'my_p_raw': 'PKGfoo-1.0',
              'src_uri': 'http://www.foo.com/${MY_P}.tbz2',
              }
-        results = get_vars(uri, up_pn, up_pv, pn)
+        results = Enamer.get_vars(uri, up_pn, up_pv, pn)
         self.assertEqual(correct, results)
 
     def test_get_vars5(self):
@@ -181,7 +181,7 @@ class TestEnamer(BaseTestCase):
              'my_p_raw': 'pkgFOO-1.0',
              'src_uri': 'http://www.foo.com/${MY_P}.tbz2',
              }
-        results = get_vars(uri, up_pn, up_pv, pn)
+        results = Enamer.get_vars(uri, up_pn, up_pv, pn)
         self.assertEqual(correct, results)
 
     def test_get_vars6(self):
@@ -205,7 +205,7 @@ class TestEnamer(BaseTestCase):
              'my_p_raw': 'PkgFoo-1.0',
              'src_uri': 'http://www.foo.com/${MY_P}.tbz2',
              }
-        results = get_vars(uri, up_pn, up_pv, pn, pv, my_pn, my_pv)
+        results = Enamer.get_vars(uri, up_pn, up_pv, pn, pv, my_pn, my_pv)
         self.assertEqual(correct, results)
 
     def test_get_vars7(self):
@@ -229,7 +229,7 @@ class TestEnamer(BaseTestCase):
              'my_p_raw': 'PkgFoo-1.0',
              'src_uri': 'http://www.foo.com/${MY_P}.tbz2',
              }
-        results = get_vars(uri, up_pn, up_pv, pn, pv, my_pn, my_pv)
+        results = Enamer.get_vars(uri, up_pn, up_pv, pn, pv, my_pn, my_pv)
         self.assertEqual(correct, results)
 
     def test_get_vars8(self):
@@ -249,7 +249,7 @@ class TestEnamer(BaseTestCase):
              'my_p_raw': 'pkgfoo-1.0dev',
              'src_uri': 'http://www.foo.com/${MY_P}.tbz2',
              }
-        results = get_vars(uri, up_pn, up_pv)
+        results = Enamer.get_vars(uri, up_pn, up_pv)
         self.assertEqual(correct, results)
 
     def test_get_vars9(self):
@@ -270,7 +270,7 @@ class TestEnamer(BaseTestCase):
              'my_p_raw': 'pkgfoo-1.0-r123',
              'src_uri': 'http://www.foo.com/${MY_P}.tbz2',
              }
-        results = get_vars(uri, up_pn, up_pv)
+        results = Enamer.get_vars(uri, up_pn, up_pv)
         self.assertEqual(correct, results)
 
     def test_get_vars10(self):
@@ -290,7 +290,7 @@ class TestEnamer(BaseTestCase):
              'my_p_raw': 'pkgfoo-1.0.dev-r1234',
              'src_uri': 'http://www.foo.com/${MY_P}.tbz2',
              }
-        results = get_vars(uri, up_pn, up_pv)
+        results = Enamer.get_vars(uri, up_pn, up_pv)
         self.assertEqual(correct, results)
 
     def test_get_vars11(self):
@@ -310,7 +310,7 @@ class TestEnamer(BaseTestCase):
              'my_p_raw': 'pkgfoo-1.0dev-r1234',
              'src_uri': 'http://www.foo.com/${MY_P}.tbz2',
              }
-        results = get_vars(uri, up_pn, up_pv)
+        results = Enamer.get_vars(uri, up_pn, up_pv)
         self.assertEqual(correct, results)
 
     def test_get_vars12(self):
@@ -330,7 +330,7 @@ class TestEnamer(BaseTestCase):
              'my_p_raw': 'pkgfoo-1.0a4',
              'src_uri': 'http://www.foo.com/${MY_P}.tbz2',
              }
-        results = get_vars(uri, up_pn, up_pv)
+        results = Enamer.get_vars(uri, up_pn, up_pv)
         self.assertEqual(correct, results)
 
     def test_get_vars13(self):
@@ -350,7 +350,7 @@ class TestEnamer(BaseTestCase):
              'my_p_raw': 'pkgfoo-1.0b1',
              'src_uri': 'http://www.foo.com/${MY_P}.tbz2',
              }
-        results = get_vars(uri, up_pn, up_pv)
+        results = Enamer.get_vars(uri, up_pn, up_pv)
         self.assertEqual(correct, results)
 
     def test_get_vars14(self):
@@ -370,7 +370,7 @@ class TestEnamer(BaseTestCase):
              'my_p_raw': 'pkgfoo-1.0-b1',
              'src_uri': 'http://www.foo.com/${MY_P}.tbz2',
              }
-        results = get_vars(uri, up_pn, up_pv)
+        results = Enamer.get_vars(uri, up_pn, up_pv)
         self.assertEqual(correct, results)
 
     def test_get_vars15(self):
@@ -390,7 +390,7 @@ class TestEnamer(BaseTestCase):
              'my_p_raw': 'pkgfoo-1.0-a4',
              'src_uri': 'http://www.foo.com/${MY_P}.tbz2',
              }
-        results = get_vars(uri, up_pn, up_pv)
+        results = Enamer.get_vars(uri, up_pn, up_pv)
         self.assertEqual(correct, results)
 
     def test_get_vars16(self):
@@ -411,7 +411,7 @@ class TestEnamer(BaseTestCase):
              'my_p_raw': 'pkgfoo-1.0-rc3',
              'src_uri': 'http://www.foo.com/${MY_P}.tbz2',
              }
-        results = get_vars(uri, up_pn, up_pv)
+        results = Enamer.get_vars(uri, up_pn, up_pv)
         self.assertEqual(correct, results)
 
     def test_get_vars17(self):
@@ -431,7 +431,7 @@ class TestEnamer(BaseTestCase):
              'my_p_raw': 'pkgfoo-1.0rc3',
              'src_uri': 'http://www.foo.com/${MY_P}.tbz2',
              }
-        results = get_vars(uri, up_pn, up_pv)
+        results = Enamer.get_vars(uri, up_pn, up_pv)
         self.assertEqual(correct, results)
 
     def test_get_vars18(self):
@@ -451,7 +451,7 @@ class TestEnamer(BaseTestCase):
              'my_p_raw': 'pkgfoo-1.0.rc3',
              'src_uri': 'http://www.foo.com/${MY_P}.tbz2',
              }
-        results = get_vars(uri, up_pn, up_pv)
+        results = Enamer.get_vars(uri, up_pn, up_pv)
         self.assertEqual(correct, results)
 
     def test_get_vars19(self):
@@ -473,7 +473,7 @@ class TestEnamer(BaseTestCase):
              'my_p_raw': 'PkgFoo-1.0.rc3',
              'src_uri': 'http://www.foo.com/${MY_P}.tbz2',
              }
-        results = get_vars(uri, up_pn, up_pv)
+        results = Enamer.get_vars(uri, up_pn, up_pv)
         self.assertEqual(correct, results)
 
     def test_get_vars20(self):
@@ -493,7 +493,7 @@ class TestEnamer(BaseTestCase):
              'my_p_raw': 'PkgFoo-1.0-c3',
              'src_uri': 'http://www.foo.com/${MY_P}.tbz2',
              }
-        results = get_vars(uri, up_pn, up_pv)
+        results = Enamer.get_vars(uri, up_pn, up_pv)
         self.assertEqual(correct, results)
 
     def test_get_vars21(self):
@@ -514,7 +514,7 @@ class TestEnamer(BaseTestCase):
              'my_p_raw': 'PkgFoo-1.0.c3',
              'src_uri': 'http://www.foo.com/${MY_P}.tbz2',
              }
-        results = get_vars(uri, up_pn, up_pv)
+        results = Enamer.get_vars(uri, up_pn, up_pv)
         self.assertEqual(correct, results)
 
     def test_get_vars22(self):
@@ -535,7 +535,7 @@ class TestEnamer(BaseTestCase):
              'my_p_raw': 'PkgFoo-1.0c3',
              'src_uri': 'http://www.foo.com/${MY_P}.tbz2',
              }
-        results = get_vars(uri, up_pn, up_pv)
+        results = Enamer.get_vars(uri, up_pn, up_pv)
         self.assertEqual(correct, results)
 
     def test_get_vars23(self):
@@ -566,5 +566,5 @@ class TestEnamer(BaseTestCase):
              'my_p_raw': 'pkg.foo-1.0',
              'src_uri': 'http://www.foo.com/${MY_P}.tbz2',
              }
-        results = get_vars(uri, up_pn, up_pv)
+        results = Enamer.get_vars(uri, up_pn, up_pv)
         self.assertEqual(correct, results)
