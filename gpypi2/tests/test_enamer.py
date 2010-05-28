@@ -21,6 +21,14 @@ from gpypi2.tests import *
 class TestEnamer(BaseTestCase):
     """"""
 
+    def test_sanitize_uri(self):
+        self.assertEqual(Enamer.sanitize_uri("http://www.domain.org/library/urlparse.html?highlight=split%20url"),
+            "http://www.domain.org/library/urlparse.html")
+        self.assertEqual(Enamer.sanitize_uri("http://www.domain.org/library/urlparse.html#test"),
+            "http://www.domain.org/library/urlparse.html")
+        self.assertEqual(Enamer.sanitize_uri("http://www.domain.org/library/urlparse.html;test?highlight=split%20ur#test"),
+            "http://www.domain.org/library/urlparse.html")
+
     def test_get_filename(self):
         """Return filename minus extension from src_uri"""
         self.assertEqual(Enamer.get_filename("http://www.foo.com/pkgfoo-1.0.tbz2"), "pkgfoo-1.0")
@@ -568,3 +576,109 @@ class TestEnamer(BaseTestCase):
              }
         results = Enamer.get_vars(uri, up_pn, up_pv)
         self.assertEqual(correct, results)
+
+    def test_get_vars24(self):
+        up_pn = "3to2"
+        up_pv = "0.1a3"
+        uri = "http://pypi.python.org/packages/source/3/3to2/3to2-0.1a3.tar.gz"
+        correct = \
+            {'pn': '3to2',
+             'pv': '0.1_alpha3',
+             'p': '3to2-0.1_alpha3',
+             'my_pn': '',
+             'my_pv': '${PV/_alpha/a}',
+             'my_p': '${PN}-${MY_PV}',
+             'my_p_raw': '3to2-0.1a3',
+             'src_uri': 'http://pypi.python.org/packages/source/3/3to2/${MY_P}.tar.gz',
+             }
+        results = Enamer.get_vars(uri, up_pn, up_pv)
+        self.assertEqual(correct, results)
+
+    def test_get_vars25(self):
+        up_pn = "airspeed"
+        up_pv = "0.1dev-20091118"
+        uri = "http://pypi.python.org/packages/any/a/airspeed/airspeed-0.1dev_20091118.tar.gz"
+        correct = \
+            {'pn': 'airspeed',
+             'pv': '0.1_pre20091118',
+             'p': 'airspeed-0.1_pre20091118',
+             'my_pn': '',
+             'my_pv': '${PV/_pre/dev-}',
+             'my_p': '${PN}-${MY_PV}',
+             'my_p_raw': 'airspeed-0.1dev_20091118',
+             'src_uri': 'http://pypi.python.org/packages/any/a/airspeed/${MY_P}.tar.gz',
+             }
+        results = Enamer.get_vars(uri, up_pn, up_pv)
+        self.assertEqual(correct, results)
+
+    def test_get_vars25(self):
+        up_pn = "atreal.cmfeditions.unlocker"
+        up_pv = "1.0beta1"
+        uri = "http://pypi.python.org/packages/2.4/a/atreal.cmfeditions.unlocker/atreal.cmfeditions.unlocker-1.0beta1.tar.gz"
+        correct = {
+             'pn': 'atreal-cmfeditions-unlocker',
+             'pv': '1.0_beta1',
+             'p': 'atreal-cmfeditions-unlocker-1.0_beta1',
+             'my_pn': '${PN/./-}',
+             'my_pv': '${PV/_beta/beta}',
+             'my_p': '${MY_PN}-${MY_PV}',
+             'my_p_raw': 'atreal.cmfeditions.unlocker-1.0beta1',
+             'src_uri': 'http://pypi.python.org/packages/2.4/a/atreal.cmfeditions.unlocker/${MY_P}.tar.gz',
+             }
+        results = Enamer.get_vars(uri, up_pn, up_pv)
+        self.assertEqual(correct, results)
+
+#gpypi2.enamer: ERROR: {'up_pv': '1.0beta1', 'pv': '1.0bet_alpha1', 'my_pn':
+#'${PN/./-}', 'my_p_raw': 'atreal.cmfeditions.unlocker-1.0beta1-py2.4.egg',
+#'cls': <class 'gpypi2.enamer.Enamer'>, 'uri':
+#'http://pypi.python.org/packages/2.4/a/atreal.cmfeditions.unlocker/atreal.cmfeditions.unlocker-1.0beta1-py2.4.egg',
+#'sf_uri': '', 'p': 'atreal-cmfeditions-unlocker-1.0bet_alpha1', 'tail': '1',
+#'my_pv': '${PV/_alpha/a}', 'src_uri':
+#'http://pypi.python.org/packages/2.4/a/atreal.cmfeditions.unlocker/${MY_P}',
+#'up_pn': 'atreal.cmfeditions.unlocker', 'my_p': '${MY_PN}-${PV}', 'pn':
+#'atreal-cmfeditions-unlocker', '_sf_homepage': ''}
+
+    def test_get_vars26(self):
+        up_pn = "zif.sedna"
+        up_pv = "0.10alpha2"
+        uri = "http://pypi.python.org/packages/2.5/z/zif.sedna/zif.sedna-0.10alpha2.tar.gz"
+        correct = \
+            {'pn': 'zif-sedna',
+             'pv': '0.10_alpha2',
+             'p': 'zif-sedna-0.10_alpha2',
+             'my_pn': '${PN/./-}',
+             'my_pv': '${PV/_alpha/alpha}',
+             'my_p': '${MY_PN}-${MY_PV}',
+             'my_p_raw': 'zif.sedna-0.10alpha2',
+             'src_uri': 'http://pypi.python.org/packages/2.5/z/zif.sedna/${MY_P}.tar.gz',
+             }
+        results = Enamer.get_vars(uri, up_pn, up_pv)
+        self.assertEqual(correct, results)
+
+#gpypi2.enamer: ERROR: {'up_pv': '0.10alpha2', 'pv': '0.10alph_alpha2', 'my_pn': '${PN/./-}', 'my_p_raw': 'zif.sedna-0.10alpha2-py2.5.egg', 'cls': <class 'gpypi2.enamer.Enamer'>, 'uri': 'http://pypi.python.org/packages/2.5/z/zif.sedna/zif.sedna-0.10alpha2-py2.5.egg', 'sf_uri': '', 'p': 'zif-sedna-0.10alph_alpha2', 'tail': '0', 'my_pv': '${PV/_alpha/a}', 'src_uri': 'http://pypi.python.org/packages/2.5/z/zif.sedna/${MY_P}', 'up_pn': 'zif.sedna', 'my_p': '${MY_PN}-${PV}', 'pn': 'zif-sedna', '_sf_homepage': ''}
+
+    def test_get_vars27(self):
+        up_pn = "xapian-haystack"
+        up_pv = "1.1.3beta"
+        uri = "http://pypi.python.org/packages/source/x/xapian-haystack/xapian-haystack-1.1.3beta.tar.gz"
+        correct = {
+            'pn': 'xapian-haystack',
+            'pv': '1.1.3_beta',
+            'p': 'xapian-haystack-1.1.3_beta',
+            'my_pn': '',
+            'my_pv': '${PV/_beta/beta}',
+            'my_p': '${PN}-${MY_PV}',
+            'my_p_raw': 'xapian-haystack-1.1.3beta',
+            'src_uri': 'http://pypi.python.org/packages/source/x/xapian-haystack/${MY_P}.tar.gz',
+        }
+        results = Enamer.get_vars(uri, up_pn, up_pv)
+        self.assertEqual(correct, results)
+
+# TODO: test 0.1a; 0.1beta, 0.1rc
+
+#gpypi2.enamer: ERROR: {'up_pv': '1.1.3beta', 'pv': '1.1.3beta', 'my_pn': '', 'my_p_raw': '', 'cls': <class 'gpypi2.enamer.Enamer'>, 'uri': 'http://pypi.python.org/packages/source/x/xapian-haystack/xapian-haystack-1.1.3beta.tar.gz', 'sf_uri': '', 'p': 'xapian-haystack-1.1.3beta', 'tail': '1', 'parts': None, 'my_pv ': '', 'src_uri': 'http://pypi.python.org/packages/source/x/xapian-haystack/${MY_P}.tar.gz', 'up_pn': 'xapian-haystack', 'my_p': 'xapian-haystack-1.1.3beta', 'pn': 'xapian-haystack', '_sf_homepage': ''}
+
+#gpypi2.enamer: ERROR: {'up_pv': '3.5.0-1', 'pv': '3.5.0-1', 'my_pn': '${PN/./-}', 'my_p_raw': 'zope.event-3.5.0-1', 'cls': <class 'gpypi2.enamer.Enamer'>, 'uri': 'http://pypi.python.org/packages/source/z/zope.event/zope.event-3.5.0-1.tar.gz', 'sf_uri': '', 'p': 'zope-event-3.5.0-1', 'tail': '1', 'parts': None, 'my_pv': '', 'src_uri': 'http://pypi.python.org/packages/source/z/zope.event/${MY_P}.tar.gz', 'up_pn': 'zope.event', 'my_p': '${MY_PN}-${PV}', 'pn': 'zope-event', '_sf_homepage': ''}
+#gpypi2.enamer: ERROR: {'up_pv': '0.1-1', 'pv': '0.1-1', 'my_pn': '', 'my_p_raw': '', 'cls': <class 'gpypi2.enamer.Enamer'>, 'uri': 'http://pypi.python.org/packages/source/w/wsgixhtml2html/wsgixhtml2html-0.1-1.tar.gz', 'sf_uri': '', 'p': 'wsgixhtml2html-0.1-1', 'tail': '1', 'parts': None, 'my_pv': '', 'src_uri': ' http://pypi.python.org/packages/source/w/wsgixhtml2html/${MY_P}.tar.gz', 'up_pn': 'wsgixhtml2html', 'my_p': 'wsgixhtml2html-0.1-1', 'pn': 'wsgixhtml2html', ' _sf_homepage': ''}
+#gpypi2.enamer: ERROR: {'up_pv': '0.6.2-test3', 'pv': '0.6.2-test3', 'my_pn': '', 'my_p_raw': '', 'cls': <class 'gpypi2.enamer.Enamer'>, 'uri': 'http://pypi.p ython.org/packages/source/w/wtop/wtop-0.6.2-test3.tar.gz', 'sf_uri': '', 'p': 'wtop-0.6.2-test3', 'tail': 't', 'parts': None, 'my_pv': '', 'src_uri': 'http:/ /pypi.python.org/packages/source/w/wtop/${MY_P}.tar.gz', 'up_pn': 'wtop', 'my_p': 'wtop-0.6.2-test3', 'pn': 'wtop', '_sf_homepage': ''}
+# TODO: gpypi2.enamer: ERROR: {'up_pv': '0.3.0b2.1', 'pv': '0.3.0b2.1', 'my_pn': '${PN/./-}', 'my_p_raw': 'zw.schema-0.3.0b2.1', 'cls': <class 'gpypi2.enamer.Enamer'>, 'uri': 'http://pypi.python.org/packages/source/z/zw.schema/zw.schema-0.3.0b2.1.tar.gz', 'sf_uri': '', 'p': 'zw-schema-0.3.0b2.1', 'tail': '0', 'parts': None, 'my_pv': '', 'src_uri': 'http://pypi.python.org/packages/source/z/zw.schema/${MY_P}.tar.gz', 'up_pn': 'zw.schema', 'my_p': '${MY_PN}-${PV}', 'pn': 'zw-schema', '_sf_homepage': ''}

@@ -44,6 +44,7 @@ a python package to ebuild.
 """
 
 import urlparse
+import logging
 import re
 import os
 
@@ -58,6 +59,7 @@ except ImportError:
     from portage import portage_dep
     from portage import portage_exception
 
+log = logging.getLogger(__name__)
 
 class Enamer(object):
     """Ebuild namer::
@@ -109,8 +111,8 @@ class Enamer(object):
 
         :param uri: URI to pacakge with no variable substitution
         :type uri: string
-
         :returns: boolean
+
         """
         return uri.startswith("http:") or uri.startswith("ftp:") or \
                 uri.startswith("mirror:") or uri.startswith("svn:")
@@ -143,12 +145,12 @@ class Enamer(object):
     def is_good_filename(cls, uri):
         """If filename is sane enough to deduce PN & PV, return pkgsplit results"""
         if cls.is_valid_uri(uri):
-            psplit = cls.split_p(uri)
+            psplit = cls.split_uri(uri)
             if psplit and psplit[0].islower():
                 return psplit
 
     @classmethod
-    def split_p(cls, uri):
+    def split_uri(cls, uri):
         """Try to split a URI into PN, PV"""
         p = cls.get_filename(uri)
         return pkgsplit(p)
@@ -157,18 +159,11 @@ class Enamer(object):
     def get_components(cls, uri):
         """Split uri into pn and pv and new uri"""
         p = cls.get_filename(uri)
-        psplit = cls.split_p(uri)
+        psplit = cls.split_uri(uri)
         uri_out = uri.replace(p, "${P}")
         pn = psplit[0].lower()
         pv = psplit[1]
         return uri_out, pn, pv
-
-    @classmethod
-    def get_myp(cls, uri):
-        """Return MY_P and new uri with MY_P in it"""
-        my_p = cls.get_filename(uri)
-        uri_out = uri.replace(my_p, "${MY_P}")
-        return uri_out, my_p
 
     @classmethod
     def guess_components(cls, my_p):
@@ -182,12 +177,13 @@ class Enamer(object):
 
         psplit = pkgsplit(my_p)
         if psplit:
-            pn = psplit[0].lower()
+            pn = psplit[0]
             pv = psplit[1]
+        log.debug("guess_components got: pn(%s), pv(%s)", pn, pv)
         return pn, pv
 
     @classmethod
-    def bad_pv(cls, up_pn, up_pv, pn="", pv="", my_pn="", my_pv=""):
+    def parse_pv(cls, up_pn, up_pv, pn="", pv="", my_pn="", my_pv=""):
         """
         Can't determine PV from upstream's version.
         Do our best with some well-known versioning schemes:
@@ -199,6 +195,7 @@ class Enamer(object):
         1.0-r1234 (1.0_pre1234)
         1.0dev-r1234 (1.0_pre1234)
         1.0.dev-r1234 (1.0_pre1234)
+        1.0dev-20091118 (1.0_pre20091118)
 
         regex match.groups:
         pkgfoo-1.0.dev-r1234
@@ -225,17 +222,31 @@ class Enamer(object):
         _p
 
         """
-        my_p = ""
         suf_matches = {
-                '_pre': ['(.*)((\.dev-r)([0-9]+))$',
-                         '(.*)((dev-r)([0-9]+))$',
-                         '(.*)((-r)([0-9]+))$'],
-                '_alpha': ['(.*)((-a)([0-9]+))$', '(.*)((a)([0-9]+))$'],
-                '_beta': ['(.*)((-b)([0-9]+))$', '(.*)((b)([0-9]+))$'],
-                '_rc': ['(.*)((\.rc)([0-9]+))$', '(.*)((-rc)([0-9]+))$',
-                        '(.*)((rc)([0-9]+))$', '(.*)((-c)([0-9]+))$',
-                        '(.*)((\.c)([0-9]+))$', '(.*)((c)([0-9]+))$'],
-                }
+                '_pre': [
+                    '(.*)((\.dev-r?)([0-9]*))$',
+                    '(.*)((dev-r?)([0-9]*))$',
+                    '(.*)((-r)([0-9]*))$',
+                ],
+                '_alpha': [
+                    '(.*)((alpha|test)([0-9]*))$',
+                    '(.*)((-a)([0-9]*))$',
+                    '(.*[^a-z])((a)([0-9]*))$',
+                ],
+                '_beta': [
+                    '(.*)((beta)([0-9]*))$',
+                    '(.*)((-b)([0-9]*))$',
+                    '(.*[^a-z])((b)([0-9]*))$',
+                ],
+                '_rc': [
+                    '(.*)((\.rc)([0-9]*))$',
+                    '(.*)((-rc)([0-9]*))$',
+                    '(.*)((rc)([0-9]*))$',
+                    '(.*)((-c)([0-9]*))$',
+                    '(.*)((\.c)([0-9]*))$',
+                    '(.*[^a-z])((c)([0-9]+))$',
+                ],
+        }
         sufs = suf_matches.keys()
         rs_match = None
         for this_suf in sufs:
@@ -247,29 +258,23 @@ class Enamer(object):
                 if rs_match:
                     portage_suffix = this_suf
                     break
+
         if rs_match:
-            #e.g. 1.0.dev-r1234
+            # e.g. 1.0.dev-r1234
             major_ver = rs_match.group(1) # 1.0
-            #whole_suffix = rs_match.group(2) #.dev-r1234
             replace_me = rs_match.group(3) #.dev-r
             rev = rs_match.group(4) #1234
             if not up_pn.islower():
                 my_pn = up_pn
                 pn = up_pn.lower()
             pv = major_ver + portage_suffix + rev
-            if my_pn:
-                my_p = "${MY_PN}-${MY_PV}"
-            else:
-                my_p = "${PN}-${MY_PV}"
             my_pv = "${PV/%s/%s}" % (portage_suffix, replace_me)
-
-        #Single suffixes with no numeric component are simply removed.
         else:
+            # Single suffixes with no numeric component are simply removed.
             bad_suffixes = [".dev", "-dev", "dev", ".final", "-final", "final"]
             for suffix in bad_suffixes:
                 if up_pv.endswith(suffix):
                     my_pv = "${PV}%s" % suffix
-                    my_p = "${PN}-${MY_PV}"
                     pn = up_pn
                     pv = up_pv[:-(len(suffix))]
                     if not pn.islower():
@@ -277,7 +282,8 @@ class Enamer(object):
                             my_pn = pn
                         pn = pn.lower()
                     break
-        return pn, pv, my_p, my_pn, my_pv
+
+        return pn, pv, my_pn, my_pv
 
     @classmethod
     def sanitize_uri(cls, uri):
@@ -288,71 +294,75 @@ class Enamer(object):
 
         :param uri: URI to pacakge with no variable substitution
         :type uri: string
-        :returns: string
+        :returns: URL without fragment, parameters and query
+        :rtype: string
 
         """
-        # TODO: ?
-        return uri
+        skinned_uri = urlparse.urlparse(uri)
+        return urlparse.urlunparse(skinned_uri[:3] + ('',)*3)
 
     @classmethod
     def get_vars(cls, uri, up_pn, up_pv, pn="", pv="", my_pn="", my_pv=""):
         """
-        Determine P* and MY_* variables
+        Determine P* and MY_* ebuild variables
 
-        Don't modify this to accept new URI schemes without writing new
-        test_enamer unit tests
-
-        This function makes me weep and gives me nightmares.
-
-        :param uri:
-        :param up_pn:
-        :param up_pv:
-        :param pn:
-        :param pv:
-        :param my_pn:
-        :param my_pv:
-        :param my_pv:
+        :param uri: HTTP URL to download link for a package
+        :param up_pn: Upstream package name
+        :param up_pv: Upstream package version
+        :param pn: Converted package name
+        :param pv: Converted package version
+        :param my_pn: Bash substitution for upstream package name
+        :param my_pv: Bash substitution for upstream package version
         :type uri: string
-        :type up_pn:
-        :type up_pv:
-        :type pn:
-        :type pv:
-        :type my_pn:
-        :type my_pv:
-        :type my_pv:
-        :returns: dict
+        :type up_pn: string
+        :type up_pv: string
+        :type pn: string
+        :type pv: string
+        :type my_pn: string
+        :type my_pv: string
+        :returns:
+            pn -- Ebuild package name
+            pv -- Ebuild package version
+            p -- Ebuild whole package name (name + version)
+            my_p -- Upstream whole package name (name + version)
+            my_pn -- Upstream package name
+            my_pv -- Upstream package version
+            my_p_raw -- my_p extracted from SRC_URI
+            src_uri -- Ebuild SRC_URI with MY_P variable
+        :rtype: dict
 
         """
-        my_p = my_p_raw = ""
+        log.debug("get_vars: %r" % locals())
+        my_p = ""
+        INVALID_VERSION = False
         uri = cls.sanitize_uri(uri)
-        sf_uri, _sf_homepage = cls.parse_sourceforge_uri(uri)
-        if sf_uri:
-            uri = sf_uri
-            #XXX _sf_homepage can be used if package metadata doesn't have one
 
-
-        #Make sure we have a valid PV
-
-        #Test for PV with -r1234 suffix
-        #Portage uses -r suffixes for it's own ebuild revisions so
-        #we have to convert it to _pre or _alpha etc.
+        # Test for PV with -r1234 suffix
+        # Portage uses -r suffixes for it's own ebuild revisions so
+        # We have to convert it to _pre or _alpha etc.
         try:
             tail = up_pv.split("-")[-1:][0][0]
-            #we have a version with a -r[nnn] suffix
-            if tail == "r":
-                pn, pv, my_p, my_pn, my_pv = \
-                    cls.bad_pv(up_pn, up_pv, pn, pv, my_pn, my_pv)
         except:
             pass
+        else:
+            if tail == "r":
+                INVALID_VERSION = True
+                log.debug("We have a version with a -r### suffix")
 
-        if not portage_dep.isvalidatom("=dev-python/%s-%s" % (up_pn, up_pv)):
-            pn, pv, my_p, my_pn, my_pv = \
-                cls.bad_pv(up_pn, up_pv, pn, pv, my_pn, my_pv)
+        portage_atom = "=dev-python/%s-%s" % (up_pn, up_pv)
+        if not portage_dep.isvalidatom(portage_atom):
+            INVALID_VERSION = True
+            log.debug("%s is not valid portage atom", portage_atom)
 
-        #No PN or PV given on command-line, try upstream's name/version
+        if INVALID_VERSION:
+            pn, pv, my_pn, my_pv = \
+                cls.parse_pv(up_pn, up_pv, pn, pv, my_pn, my_pv)
+
+        # No PN or PV given on command-line, try upstream's name/version
         if not pn and not pv:
-            #Try to determine pn and pv from uri
-            parts = cls.split_p(uri)
+            log.debug("pn and pv not given, trying upstream")
+            # Try to determine pn and pv from uri
+            parts = cls.split_uri(uri)
             if parts:
                 # pylint: disable-msg=W0612
                 # unused variable 'rev'
@@ -362,82 +372,119 @@ class Enamer(object):
             else:
                 pn = up_pn
                 pv = up_pv
-        #Try upstream's version if it could't be determined from uri or cli option
+
+        # Try upstream's version if it could't be determined from uri or cli option
         elif pn and not pv:
             pv = up_pv
         elif not pn and pv:
             pn = up_pn.lower()
 
+        my_pn, pn = cls.get_my_pn(my_pn, pn)
+
+        p = "%s-%s" % (pn, pv)
+        log.debug("p: %s", p)
+
+        # Make sure we have a valid P
+        if not portage_dep.isvalidatom("=dev-python/%s-%s" % (pn, pv)):
+            if not portage_dep.isjustname("dev-python/%s-%s" % (pn, pv)):
+                log.error(locals())
+                raise portage_exception.InvalidPackageName(pn)
+            else:
+                log.error(locals())
+                raise portage_exception.InvalidVersionString(pv)
+
+        # Check if we need to use MY_P based on src's uri
+        src_uri, my_p_raw = cls.get_my_p(uri)
+        if my_p_raw == p:
+            my_pn = ''
+            my_p_raw = ''
+            src_uri = src_uri.replace("${MY_P}", "${P}")
+        elif my_pn or my_pv:
+            src_uri, my_p_raw = cls.get_my_p(uri)
+            log.debug("getting SRC_URI with ${MY_P}: %s %s %s", src_uri, my_p, my_p_raw)
+        else:
+            src_uri, my_p, my_pn, my_p_raw = cls.get_src_uri(uri, my_pn)
+            log.debug("getting SRC_URI: %s %s %s", src_uri, my_p, my_p_raw)
+
+        log.debug("before MY_P guessing: %r", locals())
+        if my_pn or my_pv:
+            my_p = "%s-%s" % ("${MY_PN}" if my_pn else "${PN}",
+                "${MY_PV}" if my_pv else "${PV}")
+
+        return {
+            'pn': pn,
+            'pv': pv,
+            'p': p,
+            'my_p': my_p,
+            'my_pn': my_pn,
+            'my_pv': my_pv,
+            'my_p_raw': my_p_raw,
+            'src_uri': src_uri,
+        }
+
+    @classmethod
+    def get_my_pn(cls, my_pn, pn):
+        """Convert PN to MY_PN if needed
+        """
         if not pn.islower():
-            #up_pn is lower but uri has upper-case
+            # up_pn is lower but uri has upper-case
+            log.debug('pn is not lowercase, converting to my_pn')
             if not my_pn:
                 my_pn = pn
             pn = pn.lower()
 
         if "." in pn:
+            log.debug("dot found in pn")
             my_pn = '${PN/./-}'
             pn = pn.replace('.', '-')
-            my_p = "${MY_PN}-${PV}"
 
-        p = "%s-%s" % (pn, pv)
+        #if not my_pn:
+            #my_pn = "-".join(p.split("-")[:-1])
+            #if (my_pn == pn) or (my_pn == "${PN}"):
+                #my_pn = ""
+            #log.debug("set my_on to %s", my_pn)
 
-        #Check if we need to use MY_P based on src's uri
-        if my_p:
-            src_uri, my_p_raw = cls.get_myp(uri)
-        else:
-            src_uri, my_p, my_p_raw = cls.get_src_uri(uri)
-
-        #Make sure we have a valid P
-        if not portage_dep.isvalidatom("=dev-python/%s-%s" % (pn, pv)):
-            if not portage_dep.isjustname("dev-python/%s-%s" % (pn, pv)):
-                raise portage_exception.InvalidPackageName(pn)
-            else:
-                raise portage_exception.InvalidVersionString(pv)
-
-        if not my_pn:
-            my_pn = "-".join(my_p.split("-")[:-1])
-            if (my_pn == pn) or (my_pn == "${PN}"):
-                my_pn = ""
-
-        if my_p:
-            if my_p == "%s-%s" % (my_pn, "${PV}"):
-                my_p = "${MY_PN}-${PV}"
-            elif my_p == "%s-%s" % (my_pn, my_pv):
-                my_p = "${MY_PN}-${MY_PV}"
-            elif my_p == "%s-%s" % ("${PN}", my_pv):
-                my_p = "${PN}-${MY_PV}"
-            else:
-                my_p = my_p.replace(pn, "${PN}")
-                my_p = my_p.replace(pv, "${PV}")
-
-        return {'pn': pn,
-                'pv': pv,
-                'p': p,
-                'my_p': my_p,
-                'my_pn': my_pn,
-                'my_pv': my_pv,
-                'my_p_raw': my_p_raw,
-                'src_uri': src_uri,
-                }
+        log.debug("get_my_pn: my_pn(%s) pn(%s)", my_pn, pn)
+        return my_pn, pn
 
     @classmethod
-    def get_src_uri(cls, uri):
-        """Return src_uri
+    def get_src_uri(cls, uri, my_pn):
+        """
 
-        :param uri:
-        :type uri:
-        :returns: tuple (src_uri, my_p, my_p_raw)
+        :param uri: HTTP URL package download link
+        :type uri: string
+        :returns: (src_uri, my_p, my_pn, my_p_raw)
+        :rtype: string, string, string, string
 
         """
         my_p = my_p_raw = ''
         if cls.is_good_filename(uri):
             src_uri, pn, pv = cls.get_components(uri)
         else:
-            src_uri, my_p = cls.get_myp(uri)
+            src_uri, my_p = cls.get_my_p(uri)
             pn, pv = cls.guess_components(my_p)
             if pn and pv:
                 my_p_raw = my_p
-                my_p = my_p.replace(pn, "${PN}")
+                my_pn, pn = cls.get_my_pn("", pn)
+                if my_pn and my_pn != pn:
+                    my_p = my_p.replace(my_pn, "${MY_PN}")
+                else:
+                    my_p = my_p.replace(pn, "${PN}")
                 my_p = my_p.replace(pv, "${PV}")
 
-        return src_uri, my_p, my_p_raw
+        log.debug("get_src_uri: src_uri(%s), my_p(%s), my_pn(%s), my_p_raw(%s)",
+            src_uri, my_p, my_pn, my_p_raw)
+        return src_uri, my_p, my_pn, my_p_raw
+
+    @classmethod
+    def get_my_p(cls, uri):
+        """Return MY_P and new uri with MY_P in it
+
+        :param uri: HTTP URL to a package
+        :returns: (uri with ${MY_P}, ${MY_P})
+        :rtype: string, string
+
+        """
+        my_p = cls.get_filename(uri)
+        log.debug('get_my_p out of uri: %s', my_p)
+        return uri.replace(my_p, "${MY_P}"), my_p
