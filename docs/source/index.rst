@@ -27,6 +27,7 @@
 .. toctree::
     :maxdepth: 3
 
+    userguide
     development
     api
     changelog

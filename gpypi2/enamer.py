@@ -62,7 +62,7 @@ except ImportError:
 log = logging.getLogger(__name__)
 
 class Enamer(object):
-    """Ebuild namer::
+    """Ebuild namer
 
        Collection of methods for metadata conversion
        from Python distribution syntax to ebuild syntax
@@ -224,11 +224,12 @@ class Enamer(object):
         """
         suf_matches = {
                 '_pre': [
-                    '(.*)((\.dev-r?)([0-9]*))$',
+                    '(.*)((\.dev-?r?)([0-9]*))$',
                     '(.*)((dev-r?)([0-9]*))$',
                     '(.*)((-r)([0-9]*))$',
                 ],
                 '_alpha': [
+                    '(.*)((-alpha|-test)([0-9]*))$',
                     '(.*)((alpha|test)([0-9]*))$',
                     '(.*)((-a)([0-9]*))$',
                     '(.*[^a-z])((a)([0-9]*))$',
@@ -321,14 +322,14 @@ class Enamer(object):
         :type my_pn: string
         :type my_pv: string
         :returns:
-            pn -- Ebuild package name
-            pv -- Ebuild package version
-            p -- Ebuild whole package name (name + version)
-            my_p -- Upstream whole package name (name + version)
-            my_pn -- Upstream package name
-            my_pv -- Upstream package version
-            my_p_raw -- my_p extracted from SRC_URI
-            src_uri -- Ebuild SRC_URI with MY_P variable
+                * pn -- Ebuild package name
+                * pv -- Ebuild package version
+                * p -- Ebuild whole package name (name + version)
+                * my_p -- Upstream whole package name (name + version)
+                * my_pn -- Upstream package name
+                * my_pv -- Upstream package version
+                * my_p_raw -- my_p extracted from SRC_URI
+                * src_uri -- Ebuild SRC_URI with MY_P variable
         :rtype: dict
 
         """
@@ -341,7 +342,7 @@ class Enamer(object):
         # Portage uses -r suffixes for it's own ebuild revisions so
         # We have to convert it to _pre or _alpha etc.
         try:
-            tail = up_pv.split("-")[-1:][0][0]
+            tail = up_pv.split("-")[-1][0]
         except:
             pass
         else:
@@ -386,12 +387,11 @@ class Enamer(object):
 
         # Make sure we have a valid P
         if not portage_dep.isvalidatom("=dev-python/%s-%s" % (pn, pv)):
-            if not portage_dep.isjustname("dev-python/%s-%s" % (pn, pv)):
-                log.error(locals())
-                raise portage_exception.InvalidPackageName(pn)
-            else:
-                log.error(locals())
+            log.error(locals())
+            if portage_dep.isjustname("dev-python/%s-%s" % (pn, pv)):
                 raise portage_exception.InvalidVersionString(pv)
+            else:
+                raise portage_exception.InvalidPackageName(pn)
 
         # Check if we need to use MY_P based on src's uri
         src_uri, my_p_raw = cls.get_my_p(uri)
