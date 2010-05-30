@@ -34,8 +34,9 @@ setup(name='g-pypi2',
     ],
     install_requires=[
         'unittest2',
-        'mako',
+        'jinja2',
         'yolk',
+        'pygments',
     ],
     tests_require=[
         'nose',

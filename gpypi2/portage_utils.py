@@ -33,6 +33,7 @@ ENV = portage_config(clone=portage_settings).environ()
 class PortageUtils(object):
     """"""
 
+    @classmethod
     def get_repo_names(cls):
         """
         Return a dict of overlay names with their paths
@@ -54,6 +55,7 @@ class PortageUtils(object):
                 log.warn("No repo_name in %s" % path)
         return treemap
 
+    @classmethod
     def get_installed_ver(cls, cpn):
         """
         Return PV for installed version of package
@@ -71,6 +73,7 @@ class PortageUtils(object):
         except:
             return
 
+    @classmethod
     def valid_cpn(cls, cpn):
         """
         Return True if cpn is valid portage category/pn-pv
@@ -85,7 +88,7 @@ class PortageUtils(object):
         else:
             return False
 
-
+    @classmethod
     def ebuild_exists(cls, cat_pkg):
         """
         Checks if an ebuild exists in portage tree or overlay
@@ -118,6 +121,7 @@ class PortageUtils(object):
     #    print output
     #    print status
 
+    @classmethod
     def unpack_ebuild(cls, ebuild_path):
         """
         Use portage to unpack an ebuild.
@@ -141,6 +145,7 @@ class PortageUtils(object):
                 log.error(output)
                 raise OSError
 
+    @classmethod
     def find_s_dir(cls, p, cat):
         """
         Try to get ${S} by determining what directories were unpacked
@@ -170,6 +175,7 @@ class PortageUtils(object):
             log.error("Can't determine ${S}")
             log.error("Unpacked multiple directories: %s" % dirs)
 
+    @classmethod
     def get_workdir(cls, p, cat):
         """
         Return WORKDIR
@@ -183,18 +189,22 @@ class PortageUtils(object):
         """
         return '%s/portage/%s/%s/work' % (cls.get_portage_tmpdir(), cat, p)
 
+    @classmethod
     def get_portdir_overlay(cls):
         """Return PORTDIR_OVERLAY from /etc/make.conf"""
         return ENV['PORTDIR_OVERLAY'].split(" ")[0]
 
+    @classmethod
     def get_portage_tmpdir(cls):
         """Return PORTAGE_TMPDIR from /etc/make.conf"""
         return ENV["PORTAGE_TMPDIR"]
 
+    @classmethod
     def get_portdir(cls):
         """Return PORTDIR from /etc/make.conf"""
         return ENV["PORTDIR"]
 
+    @classmethod
     def get_keyword(cls):
         """Return first ACCEPT_KEYWORDS from /etc/make.conf"""
         #Choose the first arch they have, in case of multiples.
@@ -211,6 +221,7 @@ class PortageUtils(object):
             arch = "~%s" % arch
         return arch
 
+    @classmethod
     def make_overlay_dir(cls, category, pn, overlay):
         """
         Create directory(s) in overlay for ebuild
@@ -235,6 +246,7 @@ class PortageUtils(object):
                 sys.exit(2)
         return ebuild_dir
 
+    @classmethod
     def find_egg_info_dir(cls, root):
         """
         Locate all files matching supplied filename pattern in and below

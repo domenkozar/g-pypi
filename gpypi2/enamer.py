@@ -49,7 +49,6 @@ import re
 import os
 
 from portage import pkgsplit
-
 try:
     # portage >=2.2
     from portage import dep as portage_dep
@@ -58,6 +57,9 @@ except ImportError:
     # portage <=2.1
     from portage import portage_dep
     from portage import portage_exception
+
+from gpypi2.portage_utils import PortageUtils
+from gpypi2.exc import *
 
 log = logging.getLogger(__name__)
 
@@ -222,69 +224,102 @@ class Enamer(object):
         _p
 
         """
+        bad_suffixes = re.compile(
+            r'((?:[._-]*)(?:dev|devel|final|stable|snapshot)$)', re.I)
         suf_matches = {
                 '_pre': [
-                    '(.*)((\.dev-?r?)([0-9]*))$',
-                    '(.*)((dev-r?)([0-9]*))$',
-                    '(.*)((-r)([0-9]*))$',
+                    r'(.*?)([\._-]*dev[\._-]*r?)([0-9]+)$',
+                    r'(.*?)([\._-]*(?:r|pre|preview)[\._-]*)([0-9]*)$',
                 ],
                 '_alpha': [
-                    '(.*)((-alpha|-test)([0-9]*))$',
-                    '(.*)((alpha|test)([0-9]*))$',
-                    '(.*)((-a)([0-9]*))$',
-                    '(.*[^a-z])((a)([0-9]*))$',
+                    r'(.*?)([\._-]*(?:alpha|test)[\._-]*)([0-9]*)$',
+                    r'(.*?)([\._-]*a[\._-]*)([0-9]*)$',
+                    r'(.*[^a-z])(a)([0-9]*)$',
                 ],
                 '_beta': [
-                    '(.*)((beta)([0-9]*))$',
-                    '(.*)((-b)([0-9]*))$',
-                    '(.*[^a-z])((b)([0-9]*))$',
+                    r'(.*?)([\._-]*beta[\._-]*)([0-9]*)$',
+                    r'(.*?)([\._-]*b)([0-9]*)$',
+                    r'(.*[^a-z])(b)([0-9]*)$',
                 ],
                 '_rc': [
-                    '(.*)((\.rc)([0-9]*))$',
-                    '(.*)((-rc)([0-9]*))$',
-                    '(.*)((rc)([0-9]*))$',
-                    '(.*)((-c)([0-9]*))$',
-                    '(.*)((\.c)([0-9]*))$',
-                    '(.*[^a-z])((c)([0-9]+))$',
+                    r'(.*?)([\._-]*rc[\._-]*)([0-9]*)$',
+                    r'(.*?)([\._-]*c[\._-]*)([0-9]*)$',
+                    r'(.*[^a-z])(c[\._-]*)([0-9]+)$',
                 ],
         }
-        sufs = suf_matches.keys()
         rs_match = None
-        for this_suf in sufs:
+        log.debug("parse_pv: up_pv(%s)", up_pv)
+        for this_suf in suf_matches.keys():
             if rs_match:
                 break
             for regex in suf_matches[this_suf]:
-                rsuffix_regex = re.compile(regex)
+                rsuffix_regex = re.compile(regex, re.I)
                 rs_match = rsuffix_regex.match(up_pv)
                 if rs_match:
+                    log.debug("parse_pv: chosen regex: %s", regex)
                     portage_suffix = this_suf
                     break
 
         if rs_match:
             # e.g. 1.0.dev-r1234
             major_ver = rs_match.group(1) # 1.0
-            replace_me = rs_match.group(3) #.dev-r
-            rev = rs_match.group(4) #1234
-            if not up_pn.islower():
-                my_pn = up_pn
-                pn = up_pn.lower()
+            replace_me = rs_match.group(2) #.dev-r
+            # TODO: lstrip zeroes for rev?
+            rev = rs_match.group(3) #1234
             pv = major_ver + portage_suffix + rev
             my_pv = "${PV/%s/%s}" % (portage_suffix, replace_me)
+            log.debug("parse_pv: major_ver(%s) replace_me(%s), rev(%s)", major_ver, replace_me, rev)
         else:
             # Single suffixes with no numeric component are simply removed.
-            bad_suffixes = [".dev", "-dev", "dev", ".final", "-final", "final"]
-            for suffix in bad_suffixes:
-                if up_pv.endswith(suffix):
-                    my_pv = "${PV}%s" % suffix
-                    pn = up_pn
-                    pv = up_pv[:-(len(suffix))]
-                    if not pn.islower():
-                        if not my_pn:
-                            my_pn = pn
-                        pn = pn.lower()
-                    break
+            match = bad_suffixes.search(up_pv)
+            if match:
+                suffix = match.groups()[0]
+                my_pv = "${PV}%s" % suffix
+                pn = up_pn
+                pv = up_pv[:-(len(suffix))]
 
+        my_pn, pn = cls.parse_pn(up_pn, my_pn)
         return pn, pv, my_pn, my_pv
+
+    @classmethod
+    def parse_pn(cls, pn, my_pn=""):
+        """Convert PN to MY_PN if needed
+
+        :params my_pn:
+        :params pn:
+        :type pn:
+        :type my_pn:
+        :returns:
+        :rtype:
+
+        """
+        # TODO: make my_pn a list
+        if not pn.islower():
+            # up_pn is lower but uri has upper-case
+            log.debug('pn is not lowercase, converting to my_pn')
+            # TODO: $(echo "${variable}" | LC_ALL="C" tr '[:upper:]' '[:lower:]')
+            if not my_pn:
+                my_pn = pn
+            pn = pn.lower()
+
+        if "." in pn:
+            log.debug("dot found in pn")
+            my_pn = '${PN/./-}'
+            pn = pn.replace('.', '-')
+
+        if " " in pn:
+            log.debug("space found in pn")
+            my_pn = '${PN/ /-}'
+            pn = pn.replace(' ', '-')
+
+        #if not my_pn:
+            #my_pn = "-".join(p.split("-")[:-1])
+            #if (my_pn == pn) or (my_pn == "${PN}"):
+                #my_pn = ""
+            #log.debug("set my_on to %s", my_pn)
+
+        log.debug("get_my_pn: my_pn(%s) pn(%s)", my_pn, pn)
+        return my_pn, pn
 
     @classmethod
     def sanitize_uri(cls, uri):
@@ -322,14 +357,14 @@ class Enamer(object):
         :type my_pn: string
         :type my_pv: string
         :returns:
-                * pn -- Ebuild package name
-                * pv -- Ebuild package version
-                * p -- Ebuild whole package name (name + version)
-                * my_p -- Upstream whole package name (name + version)
-                * my_pn -- Upstream package name
-                * my_pv -- Upstream package version
-                * my_p_raw -- my_p extracted from SRC_URI
-                * src_uri -- Ebuild SRC_URI with MY_P variable
+            * pn -- Ebuild package name
+            * pv -- Ebuild package version
+            * p -- Ebuild whole package name (name + version)
+            * my_p -- Upstream whole package name (name + version)
+            * my_pn -- Upstream package name
+            * my_pv -- Upstream package version
+            * my_p_raw -- my_p extracted from SRC_URI
+            * src_uri -- Ebuild SRC_URI with MY_P variable
         :rtype: dict
 
         """
@@ -380,18 +415,17 @@ class Enamer(object):
         elif not pn and pv:
             pn = up_pn.lower()
 
-        my_pn, pn = cls.get_my_pn(my_pn, pn)
+        my_pn, pn = cls.parse_pn(pn, my_pn)
 
         p = "%s-%s" % (pn, pv)
-        log.debug("p: %s", p)
+        log.debug("get_vars: p(%s)", p)
 
         # Make sure we have a valid P
-        if not portage_dep.isvalidatom("=dev-python/%s-%s" % (pn, pv)):
+        atom = "=dev-python/%s-%s" % (pn, pv)
+        if not portage_dep.isvalidatom(atom):
             log.error(locals())
-            if portage_dep.isjustname("dev-python/%s-%s" % (pn, pv)):
-                raise portage_exception.InvalidVersionString(pv)
-            else:
-                raise portage_exception.InvalidPackageName(pn)
+            raise GPyPiInvalidAtom("%s is not valid portage atom. "
+            "We could not determine right pn and/or pv." % atom)
 
         # Check if we need to use MY_P based on src's uri
         src_uri, my_p_raw = cls.get_my_p(uri)
@@ -423,31 +457,6 @@ class Enamer(object):
         }
 
     @classmethod
-    def get_my_pn(cls, my_pn, pn):
-        """Convert PN to MY_PN if needed
-        """
-        if not pn.islower():
-            # up_pn is lower but uri has upper-case
-            log.debug('pn is not lowercase, converting to my_pn')
-            if not my_pn:
-                my_pn = pn
-            pn = pn.lower()
-
-        if "." in pn:
-            log.debug("dot found in pn")
-            my_pn = '${PN/./-}'
-            pn = pn.replace('.', '-')
-
-        #if not my_pn:
-            #my_pn = "-".join(p.split("-")[:-1])
-            #if (my_pn == pn) or (my_pn == "${PN}"):
-                #my_pn = ""
-            #log.debug("set my_on to %s", my_pn)
-
-        log.debug("get_my_pn: my_pn(%s) pn(%s)", my_pn, pn)
-        return my_pn, pn
-
-    @classmethod
     def get_src_uri(cls, uri, my_pn):
         """
 
@@ -465,7 +474,7 @@ class Enamer(object):
             pn, pv = cls.guess_components(my_p)
             if pn and pv:
                 my_p_raw = my_p
-                my_pn, pn = cls.get_my_pn("", pn)
+                my_pn, pn = cls.parse_pn(pn)
                 if my_pn and my_pn != pn:
                     my_p = my_p.replace(my_pn, "${MY_PN}")
                 else:
@@ -488,3 +497,93 @@ class Enamer(object):
         my_p = cls.get_filename(uri)
         log.debug('get_my_p out of uri: %s', my_p)
         return uri.replace(my_p, "${MY_P}"), my_p
+
+    @classmethod
+    def convert_license(cls, license):
+        """
+        Map defined classifier license to Portage license
+
+        PyPi list of licences:
+        http://cheeseshop.python.org/pypi?%3Aaction=list_classifiers
+
+        :param license: PyPi license classifier
+        :type license: string
+        :returns: Portage license or ""
+        :rtype: string
+
+        """
+        my_license = license.split(":: ")[-1:][0]
+        # TODO: renew list of licences
+        known_licenses = {
+            "Aladdin Free Public License (AFPL)": "Aladdin",
+            "Academic Free License (AFL)": "AFL-3.0",
+            "Apache Software License": "Apache-2.0",
+            "Apple Public Source License": "Apple",
+            "Artistic License": "Artistic-2",
+            "BSD License": "BSD-2",
+            "Common Public License": "CPL-1.0",
+            "GNU Free Documentation License (FDL)": "FDL-3",
+            "GNU General Public License (GPL)": "GPL-2",
+            "GNU Library or Lesser General Public License (LGPL)": "LGPL-2.1",
+            "IBM Public License": "IBM",
+            "Intel Open Source License": "Intel",
+            "MIT License": "MIT",
+            "Mozilla Public License 1.0 (MPL)": "MPL",
+            "Mozilla Public License 1.1 (MPL 1.1)": "MPL-1.1",
+            "Nethack General Public License": "nethack",
+            "Open Group Test Suite License": "OGTSL",
+            "Python License (CNRI Python License)": "PYTHON",
+            "Python Software Foundation License": "PSF-2.4",
+            "Qt Public License (QPL)": "QPL",
+            "Sleepycat License": "DB",
+            "Sun Public License": "SPL",
+            "University of Illinois/NCSA Open Source License": "ncsa-1.3",
+            "W3C License": "WC3",
+            "zlib/libpng License": "ZLIB",
+            "Zope Public License": "ZPL",
+            "Public Domain": "public-domain"
+            }
+        if known_licenses.has_key(my_license):
+            return known_licenses[my_license]
+        else:
+            return ""
+
+    @classmethod
+    def is_valid_portage_license(cls, license):
+        """
+        Check if license string matches a valid one in ${PORTDIR}/licenses
+
+        :param license: Portage license name
+        :type license: string
+        :returns: True if license is valid/exists
+        :rtype: bool
+
+        """
+        return os.path.exists(os.path.join(PortageUtils.get_portdir(), "licenses", license))
+
+    @classmethod
+    def format_depend(cls, dep_list):
+        """
+        Return a formatted string containing DEPEND/RDEPEND
+
+        :param dep_list: list of portage-ready dependency strings
+        :returns: formatted DEPEND or RDEPEND string ready for ebuild
+
+        * First dep has no tab, has linefeed
+        * Middle deps have tab and linefeed
+        * Last dep has tab, no linefeed
+
+        **Example**
+
+        >>> print Enamer.format_depend(["dev-python/foo-1.0", #doctest: +NORMALIZE_WHITESPACE
+        ... ">=dev-python/bar-0.2", "dev-python/zaba"])
+        dev-python/foo-1.0
+            >=dev-python/bar-0.2
+            dev-python/zaba
+
+        """
+
+        if not len(dep_list):
+            return ""
+
+        return "\n\t".join(dep_list)

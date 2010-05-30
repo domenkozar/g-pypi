@@ -86,6 +86,26 @@ class TestEnamer(BaseTestCase):
         ):
             self.assertEqual(Enamer.parse_sourceforge_uri(url), mirror)
 
+    def test_convert_license(self):
+        """Convert classifier license to known portage license"""
+        self.assertEqual(Enamer.convert_license("License :: OSI Approved :: Zope Public License"), "ZPL")
+        self.assertEqual(Enamer.convert_license("License :: OSI Approved :: GNU Library or Lesser General Public License (LGPL)"),  "LGPL-2.1")
+        self.assertEqual(Enamer.convert_license("License :: Public Domain"), "public-domain")
+        self.assertEqual(Enamer.convert_license(""), "")
+
+    def test_is_valid_license(self):
+        """Check if license string matches a valid one in ${PORTDIR}/licenses"""
+        self.assertFalse(Enamer.is_valid_portage_license("GPL"))
+        self.assertTrue(Enamer.is_valid_portage_license("GPL-2"))
+
+    def test_format_depend(self):
+        self.assertEqual(Enamer.format_depend(['dev-python/foo-1.0']),
+            "dev-python/foo-1.0")
+        self.assertEqual(Enamer.format_depend(['foo', 'bar']),
+            "foo\n\tbar")
+        self.assertEqual(Enamer.format_depend(['foo', 'bar', 'foobar', 'beyond']),
+            "foo\n\tbar\n\tfoobar\n\tbeyond")
+
     def test_get_vars1(self):
         """
         Absolute best-case scenario determines $P from up_pn, up_pv
@@ -615,7 +635,7 @@ class TestEnamer(BaseTestCase):
         results = Enamer.get_vars(uri, up_pn, up_pv)
         self.assertEqual(correct, results)
 
-    def test_get_vars25(self):
+    def test_get_vars26(self):
         """1.0beta1 -> 1.0_beta1"""
         up_pn = "atreal.cmfeditions.unlocker"
         up_pv = "1.0beta1"
@@ -633,7 +653,7 @@ class TestEnamer(BaseTestCase):
         results = Enamer.get_vars(uri, up_pn, up_pv)
         self.assertEqual(correct, results)
 
-    def test_get_vars26(self):
+    def test_get_vars27(self):
         """0.10alpha2 -> 0.10_alpha2"""
         up_pn = "zif.sedna"
         up_pv = "0.10alpha2"
@@ -651,7 +671,7 @@ class TestEnamer(BaseTestCase):
         results = Enamer.get_vars(uri, up_pn, up_pv)
         self.assertEqual(correct, results)
 
-    def test_get_vars27(self):
+    def test_get_vars28(self):
         """1.1.3beta -> 1.1.3_beta"""
         up_pn = "xapian-haystack"
         up_pv = "1.1.3beta"
@@ -669,8 +689,8 @@ class TestEnamer(BaseTestCase):
         results = Enamer.get_vars(uri, up_pn, up_pv)
         self.assertEqual(correct, results)
 
-    def test_get_vars28(self):
-        """"""
+    def test_get_vars29(self):
+        """0.6.2-test3 -> 0.6.2_alpha3"""
         up_pn = "wtop"
         up_pv = "0.6.2-test3"
         uri = "http://pypi.python.org/packages/source/w/wtop/wtop-0.6.2-test3.tar.gz"
@@ -688,10 +708,11 @@ class TestEnamer(BaseTestCase):
         self.assertEqual(correct, results)
 
     @unittest2.expectedFailure
-    def test_get_vars29(self):
-        """"""
+    def test_get_vars30(self):
+        """"0.3.0b2.1 -> UNKNOWN"""
         up_pn = "zw.schema"
         up_pv = "0.3.0b2.1"
+        # TODO: parse b2.1
         uri = "http://pypi.python.org/packages/source/z/zw.schema/zw.schema-0.3.0b2.1.tar.gz"
         correct = {
             'pn': 'zw.schema',
@@ -706,4 +727,221 @@ class TestEnamer(BaseTestCase):
         results = Enamer.get_vars(uri, up_pn, up_pv)
         self.assertEqual(correct, results)
 
-# TODO: test 0.1a; 0.1beta, 0.1rc
+    def test_get_vars31(self):
+        """1.2-devel -> 1.2"""
+        up_pn = "optcomplete"
+        up_pv = "1.2-devel"
+        uri = "http://pypi.python.org/packages/source/o/optcomplete/optcomplete-1.2-devel.tar.gz"
+        correct = {
+            'pn': 'optcomplete',
+            'pv': '1.2',
+            'p': 'optcomplete-1.2',
+            'my_pn': '',
+            'my_pv': '${PV}-devel',
+            'my_p': '${PN}-${MY_PV}',
+            'my_p_raw': 'optcomplete-1.2-devel',
+            'src_uri': 'http://pypi.python.org/packages/source/o/optcomplete/${MY_P}.tar.gz',
+        }
+        results = Enamer.get_vars(uri, up_pn, up_pv)
+        self.assertEqual(correct, results)
+
+    def test_get_vars32(self):
+        """1.1.56-STABLE -> 1.1.56"""
+        up_pn = "django-plus"
+        up_pv = "1.1.56-STABLE"
+        uri = "http://pypi.python.org/packages/source/d/django-plus/django-plus-1.1.56-stable.tar.gz#md5=e788af64f1dfa643bb614a9e0453c1cd"
+        correct = {
+            'pn': 'django-plus',
+            'pv': '1.1.56',
+            'p': 'django-plus-1.1.56',
+            'my_pn': '',
+            'my_pv': '${PV}-STABLE',
+            'my_p': '${PN}-${MY_PV}',
+            'my_p_raw': 'django-plus-1.1.56-stable',
+            'src_uri': 'http://pypi.python.org/packages/source/d/django-plus/${MY_P}.tar.gz',
+        }
+        results = Enamer.get_vars(uri, up_pn, up_pv)
+        self.assertEqual(correct, results)
+
+    @unittest2.expectedFailure
+    def test_get_vars33(self):
+        """Community Codeswarm-0.2.1 -> community-codeswarm-0.2.1"""
+        up_pn = "Community Codeswarm"
+        up_pv = "0.2.1"
+        uri = "http://pypi.python.org/packages/source/C/Community%20Codeswarm/Community%20Codeswarm-0.2.1.tar.gz"
+        correct = {
+            'pn': 'community-codeswarm',
+            'pv': '0.2.1',
+            'p': 'community-codeswarm-0.2.1',
+            'my_pn': ['lowercase', '${PN/ /-}'],
+            'my_pv': '',
+            'my_p': '${MY_PN}-${PV}',
+            'my_p_raw': 'Community%20Codeswarm-0.2.1',
+            'src_uri': 'http://pypi.python.org/packages/source/C/Community%20Codeswarm/${MY_P}.tar.gz',
+        }
+        results = Enamer.get_vars(uri, up_pn, up_pv)
+        self.assertEqual(correct, results)
+
+    def test_get_vars34(self):
+        """1.1.56-STABLE -> 1.1.56"""
+        up_pn = "django-plus"
+        up_pv = "1.1.56-STABLE"
+        uri = "http://pypi.python.org/packages/source/d/django-plus/django-plus-1.1.56-stable.tar.gz#md5=e788af64f1dfa643bb614a9e0453c1cd"
+        correct = {
+            'pn': 'django-plus',
+            'pv': '1.1.56',
+            'p': 'django-plus-1.1.56',
+            'my_pn': '',
+            'my_pv': '${PV}-STABLE',
+            'my_p': '${PN}-${MY_PV}',
+            'my_p_raw': 'django-plus-1.1.56-stable',
+            'src_uri': 'http://pypi.python.org/packages/source/d/django-plus/${MY_P}.tar.gz',
+        }
+        results = Enamer.get_vars(uri, up_pn, up_pv)
+        self.assertEqual(correct, results)
+
+    def test_get_vars35(self):
+        """2.0.1-pre1 -> 2.0.1_pre1"""
+        up_pn = "django-articles"
+        up_pv = "2.0.1-pre1"
+        uri = "http://pypi.python.org/packages/source/d/django-articles/django-articles-2.0.1-pre1.tar.gz"
+        correct = {
+            'pn': 'django-articles',
+            'pv': '2.0.1_pre1',
+            'p': 'django-articles-2.0.1_pre1',
+            'my_pn': '',
+            'my_pv': '${PV/_pre/-pre}',
+            'my_p': '${PN}-${MY_PV}',
+            'my_p_raw': 'django-articles-2.0.1-pre1',
+            'src_uri': 'http://pypi.python.org/packages/source/d/django-articles/${MY_P}.tar.gz',
+        }
+        results = Enamer.get_vars(uri, up_pn, up_pv)
+        self.assertEqual(correct, results)
+
+    def test_get_vars36(self):
+        """0.1.4pre -> 2.0.1_pre"""
+        up_pn = "django-mako"
+        up_pv = "0.1.4pre"
+        uri = "http://pypi.python.org/packages/source/d/django-mako/django-mako-0.1.4pre.tar.gz"
+        correct = {
+            'pn': 'django-mako',
+            'pv': '0.1.4_pre',
+            'p': 'django-mako-0.1.4_pre',
+            'my_pn': '',
+            'my_pv': '${PV/_pre/pre}',
+            'my_p': '${PN}-${MY_PV}',
+            'my_p_raw': 'django-mako-0.1.4pre',
+            'src_uri': 'http://pypi.python.org/packages/source/d/django-mako/${MY_P}.tar.gz',
+        }
+        results = Enamer.get_vars(uri, up_pn, up_pv)
+        self.assertEqual(correct, results)
+
+    def test_get_vars37(self):
+        """2.0.1-pre1 -> 2.0.1_pre1"""
+        up_pn = "django-mako"
+        up_pv = "0.1.4pre"
+        uri = "http://pypi.python.org/packages/source/d/django-mako/django-mako-0.1.4pre.tar.gz"
+        correct = {
+            'pn': 'django-mako',
+            'pv': '0.1.4_pre',
+            'p': 'django-mako-0.1.4_pre',
+            'my_pn': '',
+            'my_pv': '${PV/_pre/pre}',
+            'my_p': '${PN}-${MY_PV}',
+            'my_p_raw': 'django-mako-0.1.4pre',
+            'src_uri': 'http://pypi.python.org/packages/source/d/django-mako/${MY_P}.tar.gz',
+        }
+        results = Enamer.get_vars(uri, up_pn, up_pv)
+        self.assertEqual(correct, results)
+
+    def test_get_vars38(self):
+        """1.0.0-preview2 -> 1.0.0_pre2"""
+        up_pn = "mrv"
+        up_pv = "1.0.0-preview2"
+        uri = "http://pypi.python.org/packages/source/M/MRV/mrv-1.0.0-Preview2.zip"
+        correct = {
+            'pn': 'mrv',
+            'pv': '1.0.0_pre2',
+            'p': 'mrv-1.0.0_pre2',
+            'my_pn': '',
+            'my_pv': '${PV/_pre/-preview}',
+            'my_p': '${PN}-${MY_PV}',
+            'my_p_raw': 'mrv-1.0.0-Preview2',
+            'src_uri': 'http://pypi.python.org/packages/source/M/MRV/${MY_P}.zip',
+        }
+        results = Enamer.get_vars(uri, up_pn, up_pv)
+        self.assertEqual(correct, results)
+
+    def test_get_vars39(self):
+        """0.2.0RC5 -> 0.2.0_rc5"""
+        up_pn = "irssinotifier"
+        up_pv = "0.2.0RC5"
+        uri = "http://pypi.python.org/packages/source/I/IrssiNotifier/IrssiNotifier-0.2.0RC5.tar.bz2"
+        correct = {
+            'pn': 'irssinotifier',
+            'pv': '0.2.0_rc5',
+            'p': 'irssinotifier-0.2.0_rc5',
+            'my_pn': '',
+            'my_pv': '${PV/_rc/RC}',
+            'my_p': '${PN}-${MY_PV}',
+            'my_p_raw': 'IrssiNotifier-0.2.0RC5',
+            'src_uri': 'http://pypi.python.org/packages/source/I/IrssiNotifier/${MY_P}.tar.bz2',
+        }
+        results = Enamer.get_vars(uri, up_pn, up_pv)
+        self.assertEqual(correct, results)
+
+    def test_get_vars40(self):
+        """3.0.rc.8 -> 3.0_rc8"""
+        up_pn = "pydap"
+        up_pv = "3.0.rc.8"
+        uri = "http://pypi.python.org/packages/source/P/Pydap/Pydap-3.0.rc.8.tar.gz"
+        correct = {
+            'pn': 'pydap',
+            'pv': '3.0_rc8',
+            'p': 'pydap-3.0_rc8',
+            'my_pn': '',
+            'my_pv': '${PV/_rc/.rc.}',
+            'my_p': '${PN}-${MY_PV}',
+            'my_p_raw': 'Pydap-3.0.rc.8',
+            'src_uri': 'http://pypi.python.org/packages/source/P/Pydap/${MY_P}.tar.gz',
+        }
+        results = Enamer.get_vars(uri, up_pn, up_pv)
+        self.assertEqual(correct, results)
+
+    def test_get_vars41(self):
+        """0.1-beta-3 -> 0.1_beta3"""
+        up_pn = "clyther"
+        up_pv = "0.1-beta-3"
+        uri = "http://pypi.python.org/packages/source/c/clyther/clyther-0.1-beta-3.tar.gz"
+        correct = {
+            'pn': 'clyther',
+            'pv': '0.1_beta3',
+            'p': 'clyther-0.1_beta3',
+            'my_pn': '',
+            'my_pv': '${PV/_beta/-beta-}',
+            'my_p': '${PN}-${MY_PV}',
+            'my_p_raw': 'clyther-0.1-beta-3',
+            'src_uri': 'http://pypi.python.org/packages/source/c/clyther/${MY_P}.tar.gz',
+        }
+        results = Enamer.get_vars(uri, up_pn, up_pv)
+        self.assertEqual(correct, results)
+
+    def test_get_vars42(self):
+        """0.1.5.-beta -> 0.1.5_beta"""
+        up_pn = "django-projector"
+        up_pv = "0.1.5.-beta"
+        uri = "http://pypi.python.org/packages/source/d/django-projector/django-projector-0.1.5.-beta.tar.gz"
+        correct = {
+            'pn': 'django-projector',
+            'pv': '0.1.5_beta',
+            'p': 'django-projector-0.1.5_beta',
+            'my_pn': '',
+            'my_pv': '${PV/_beta/.-beta}',
+            'my_p': '${PN}-${MY_PV}',
+            'my_p_raw': 'django-projector-0.1.5.-beta',
+            'src_uri': 'http://pypi.python.org/packages/source/d/django-projector/${MY_P}.tar.gz',
+        }
+        results = Enamer.get_vars(uri, up_pn, up_pv)
+        self.assertEqual(correct, results)
+
+# TODO: URLs don't actually match MY_P (case sensitivity, special chars..., SRC_URI class should handle this)
