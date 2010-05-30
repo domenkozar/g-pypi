@@ -5,42 +5,6 @@
 Utility functions helping conversion of metadata from
 a python package to ebuild.
 
-* Examples of what it can detect/convert:
-    (See test_enamer.py for full capabilities)
-
-    http://www.foo.com/pkgfoo-1.0.tbz2
-    PN="pkgfoo"
-    PV="1.0"
-    Ebuild name: pkgfoo-1.0.ebuild
-    SRC_URI="http://www.foo.com/${P}.tbz2"
-
-    http://www.foo.com/PkgFoo-1.0.tbz2
-    PN="pkgfoo"
-    PV="1.0"
-    Ebuild name: pkgfoo-1.0.ebuild
-    MY_P="PkgFoo-${PV}"
-    SRC_URI="http://www.foo.com/${MY_P}.tbz2"
-
-    http://www.foo.com/pkgfoo_1.0.tbz2
-    PN="pkgfoo"
-    PV="1.0"
-    Ebuild name: pkgfoo-1.0.ebuild
-    MY_P="${PN}_${PV}"
-    SRC_URI="http://www.foo.com/${MY_P}.tbz2"
-
-    http://www.foo.com/PKGFOO_1.0.tbz2
-    PN="pkgfoo"
-    PV="1.0"
-    Ebuild name: pkgfoo-1.0.ebuild
-    MY_P="PKGFOO_${PV}"
-    SRC_URI="http://www.foo.com/${MY_P}.tbz2"
-
-    http://www.foo.com/pkg-foo-1.0_beta1.tbz2
-    PN="pkg-foo"
-    PV="1.0_beta1"
-    Ebuild name: pkg-foo-1.0_beta1.ebuild
-    SRC_URI="http://www.foo.com/${P}.tbz2"
-
 """
 
 import urlparse
@@ -198,20 +162,22 @@ class Enamer(object):
         1.0dev-r1234 (1.0_pre1234)
         1.0.dev-r1234 (1.0_pre1234)
         1.0dev-20091118 (1.0_pre20091118)
+        (for more examples look at test_enamer.py)
 
-        regex match.groups:
-        pkgfoo-1.0.dev-r1234
-        group 1 pv major (1.0)
-        group 2 entire suffix (.dev-r1234)
-        group 3 replace this with portage suffix (.dev-r)
-        group 4 suffix version (1234)
+        Regex match.groups::
+            pkgfoo-1.0.dev-r1234
+            group 1 pv major (1.0)
+            group 2 entire suffix (.dev-r1234)
+            group 3 replace this with portage suffix (.dev-r)
+            group 4 suffix version (1234)
 
         The order of the regex's is significant. For instance if you have
         .dev-r123, dev-r123 and -r123 you should order your regex's in
         that order.
 
-        The number of regex's could have been reduced, but we use four
-        number of match.groups every time to simplify the code
+        .. note::
+            The number of regex's could have been reduced, but we use four
+            number of match.groups every time to simplify the code
 
         The _pre suffix is most-likely incorrect. There is no 'dev'
         prefix used by portage, the 'earliest' there is is '_alpha'.
@@ -264,7 +230,6 @@ class Enamer(object):
             # e.g. 1.0.dev-r1234
             major_ver = rs_match.group(1) # 1.0
             replace_me = rs_match.group(2) #.dev-r
-            # TODO: lstrip zeroes for rev?
             rev = rs_match.group(3) #1234
             pv = major_ver + portage_suffix + rev
             my_pv = "${PV/%s/%s}" % (portage_suffix, replace_me)
@@ -366,6 +331,46 @@ class Enamer(object):
             * my_p_raw -- my_p extracted from SRC_URI
             * src_uri -- Ebuild SRC_URI with MY_P variable
         :rtype: dict
+
+        **Examples of what it can detect/convert** (see test_enamer.py for full capabilities)
+
+        http://www.foo.com/pkgfoo-1.0.tbz2
+
+        * PN="pkgfoo"
+        * PV="1.0"
+        * Ebuild name: pkgfoo-1.0.ebuild
+        * SRC_URI="http://www.foo.com/${P}.tbz2"
+
+        http://www.foo.com/PkgFoo-1.0.tbz2
+
+        * PN="pkgfoo"
+        * PV="1.0"
+        * Ebuild name: pkgfoo-1.0.ebuild
+        * MY_P="PkgFoo-${PV}"
+        * SRC_URI="http://www.foo.com/${MY_P}.tbz2"
+
+        http://www.foo.com/pkgfoo_1.0.tbz2
+
+        * PN="pkgfoo"
+        * PV="1.0"
+        * Ebuild name: pkgfoo-1.0.ebuild
+        * MY_P="${PN}_${PV}"
+        * SRC_URI="http://www.foo.com/${MY_P}.tbz2"
+
+        http://www.foo.com/PKGFOO_1.0.tbz2
+
+        * PN="pkgfoo"
+        * PV="1.0"
+        * Ebuild name: pkgfoo-1.0.ebuild
+        * MY_P="PKGFOO_${PV}"
+        * SRC_URI="http://www.foo.com/${MY_P}.tbz2"
+
+        http://www.foo.com/pkg-foo-1.0_beta1.tbz2
+
+        * PN="pkg-foo"
+        * PV="1.0_beta1"
+        * Ebuild name: pkg-foo-1.0_beta1.ebuild
+        * SRC_URI="http://www.foo.com/${P}.tbz2"
 
         """
         log.debug("get_vars: %r" % locals())
@@ -504,15 +509,22 @@ class Enamer(object):
         Map defined classifier license to Portage license
 
         PyPi list of licences:
-        http://cheeseshop.python.org/pypi?%3Aaction=list_classifiers
+        http://pypi.python.org/pypi?:action=list_classifiers
 
         :param license: PyPi license classifier
         :type license: string
         :returns: Portage license or ""
         :rtype: string
 
+        **Example:**
+
+        >>> Enamer.convert_license("License :: OSI Approved :: BSD License")
+        'BSD-2'
+        >>> Enamer.convert_license("License :: OSI Approved :: foobar")
+        ''
+
         """
-        my_license = license.split(":: ")[-1:][0]
+        my_license = license.split(":: ")[-1]
         # TODO: renew list of licences
         known_licenses = {
             "Aladdin Free Public License (AFPL)": "Aladdin",
@@ -543,10 +555,7 @@ class Enamer(object):
             "Zope Public License": "ZPL",
             "Public Domain": "public-domain"
             }
-        if known_licenses.has_key(my_license):
-            return known_licenses[my_license]
-        else:
-            return ""
+        return known_licenses.get(my_license, "")
 
     @classmethod
     def is_valid_portage_license(cls, license):
@@ -558,13 +567,20 @@ class Enamer(object):
         :returns: True if license is valid/exists
         :rtype: bool
 
+        **Example:**
+
+        >>> Enamer.is_valid_portage_license("KQEMU")
+        True
+        >>> Enamer.is_valid_portage_license("foobar")
+        False
+
         """
         return os.path.exists(os.path.join(PortageUtils.get_portdir(), "licenses", license))
 
     @classmethod
     def format_depend(cls, dep_list):
         """
-        Return a formatted string containing DEPEND/RDEPEND
+        Return a formatted string for ebuild DEPEND/RDEPEND
 
         :param dep_list: list of portage-ready dependency strings
         :returns: formatted DEPEND or RDEPEND string ready for ebuild
@@ -573,7 +589,7 @@ class Enamer(object):
         * Middle deps have tab and linefeed
         * Last dep has tab, no linefeed
 
-        **Example**
+        **Example:**
 
         >>> print Enamer.format_depend(["dev-python/foo-1.0", #doctest: +NORMALIZE_WHITESPACE
         ... ">=dev-python/bar-0.2", "dev-python/zaba"])
