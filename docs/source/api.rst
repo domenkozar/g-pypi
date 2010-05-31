@@ -1,6 +1,8 @@
 Python API
 ##########
 
+.. highlight: python
+
 :mod:`gpypi2` -- Main package 
 *****************************
 
@@ -31,7 +33,6 @@ Python API
 .. automodule:: gpypi2.exc
    :members:
    :undoc-members:
-   :inherited-members:
    :show-inheritance:
 
 :mod:`gpypi2.portage_utils` -- GPyPi portage utilities
@@ -66,7 +67,7 @@ Python API
    :show-inheritance:
 
 :mod:`gpypi2.tests.test_portage_utils`
-=====================================
+==========================================
 
 .. automodule:: gpypi2.tests.test_portage_utils
    :members:

@@ -25,6 +25,7 @@ except ImportError:
 from gpypi2.portage_utils import PortageUtils
 from gpypi2.exc import *
 
+
 log = logging.getLogger(__name__)
 
 class Enamer(object):
@@ -42,11 +43,16 @@ class Enamer(object):
     def get_filename(cls, uri):
         """
         Return file name minus extension from src_uri
-        e.g. http://somesite.com/foobar-1.0.tar.gz will yield foobar-1.0
 
         :param uri: URI to package with no variables substitution
         :type uri: string
-        :returns: string
+        :returns: filename
+        :rtype: string
+
+        **Example:**
+
+        >>> Enamer.get_filename('http://somesite.com/foobar-1.0.tar.gz')
+        'foobar-1.0'
 
         """
         path = urlparse.urlparse(uri)[2]
@@ -57,11 +63,19 @@ class Enamer(object):
     def strip_ext(cls, path):
         """Strip possible extensions from filename.
 
-        Supported extensions: zip, tgz, tar.gz, tar.bz2, tbz2
+        Supported, valid extensions: zip, tgz, tar.gz, tar.bz2, tbz2
 
         :param path: Filesystem path to a file.
         :type path: string
-        :returns: string
+        :returns: path minus extension
+        :rtype: string
+
+        **Example:**
+
+        >>> Enamer.strip_ext('/home/user/filename.zip')
+        '/home/user/filename'
+        >>> Enamer.strip_ext('/home/user/filename.unknown')
+        '/home/user/filename.unknown'
 
         """
         valid_extensions = [".zip", ".tgz", ".tar.gz", ".tar.bz2", ".tbz2"]
@@ -75,9 +89,16 @@ class Enamer(object):
         """
         Check if URI's addressing scheme is valid
 
-        :param uri: URI to pacakge with no variable substitution
+        :param uri: URI to package with no variable substitution
         :type uri: string
         :returns: boolean
+
+        **Example:**
+
+        >>> Enamer.is_valid_uri('http://...')
+        True
+        >>> Enamer.is_valid_uri('foobar://...')
+        False
 
         """
         return uri.startswith("http:") or uri.startswith("ftp:") or \
@@ -108,7 +129,7 @@ class Enamer(object):
         return uri_out, homepage
 
     @classmethod
-    def is_good_filename(cls, uri):
+    def _is_good_filename(cls, uri):
         """If filename is sane enough to deduce PN & PV, return pkgsplit results"""
         if cls.is_valid_uri(uri):
             psplit = cls.split_uri(uri)
@@ -117,12 +138,26 @@ class Enamer(object):
 
     @classmethod
     def split_uri(cls, uri):
-        """Try to split a URI into PN, PV"""
+        """Try to split a URI into PN, PV and REV
+
+        :param uri: SRC_URI
+        :type uri: string
+        :returns: PN, PV, REV
+        :rtype: tuple of strings
+
+        **Example:**
+
+        >>> Enamer.split_uri('http://www.foobar.com/foobar-1.0.tar.gz')
+        ('foobar', '1.0', 'r0')
+        >>> Enamer.split_uri('http://www.foobar.com/foo-2.3_beta3-r5.tar.gz')
+        ('foo', '2.3_beta3', 'r5')
+
+        """
         p = cls.get_filename(uri)
         return pkgsplit(p)
 
     @classmethod
-    def get_components(cls, uri):
+    def _get_components(cls, uri):
         """Split uri into pn and pv and new uri"""
         p = cls.get_filename(uri)
         psplit = cls.split_uri(uri)
@@ -132,7 +167,7 @@ class Enamer(object):
         return uri_out, pn, pv
 
     @classmethod
-    def guess_components(cls, my_p):
+    def _guess_components(cls, my_p):
         """Try to break up raw MY_P into PN and PV"""
         pn, pv = "", ""
 
@@ -149,53 +184,73 @@ class Enamer(object):
         return pn, pv
 
     @classmethod
-    def parse_pv(cls, up_pn, up_pv, pn="", pv="", my_pn="", my_pv=""):
+    def parse_pv(cls, up_pn, up_pv, pn="", pv="", my_pn=None, my_pv=None):
         """
+        :param up_pn: Upstream package name
+        :param up_pv: Upstream package version
+        :param pn: Converted Gentoo package name
+        :param pv: Converted Gentoo package version
+        :param my_pn: Bash substitutions for original package name
+        :param my_pv: Bash substitutions for original package version
+        :type up_pn: string
+        :type up_pv: string
+        :type pn: string
+        :type pv: string
+        :type my_pn: list
+        :type my_pv: list
+        :returns: (PN, PV, MY_PN, MY_PV)
+        :rtype: tuple of (string, string, list, list)
+
         Can't determine PV from upstream's version.
         Do our best with some well-known versioning schemes:
 
-        1.0a1 (1.0_alpha1)
-        1.0-a1 (1.0_alpha1)
-        1.0b1 (1.0_beta1)
-        1.0-b1 (1.0_beta1)
-        1.0-r1234 (1.0_pre1234)
-        1.0dev-r1234 (1.0_pre1234)
-        1.0.dev-r1234 (1.0_pre1234)
-        1.0dev-20091118 (1.0_pre20091118)
-        (for more examples look at test_enamer.py)
+        * 1.0a1 (1.0_alpha1)
+        * 1.0-a1 (1.0_alpha1)
+        * 1.0b1 (1.0_beta1)
+        * 1.0-b1 (1.0_beta1)
+        * 1.0-r1234 (1.0_pre1234)
+        * 1.0dev-r1234 (1.0_pre1234)
+        * 1.0.dev-r1234 (1.0_pre1234)
+        * 1.0dev-20091118 (1.0_pre20091118)
+        * (for more examples look at test_enamer.py)
 
-        Regex match.groups::
-            pkgfoo-1.0.dev-r1234
-            group 1 pv major (1.0)
-            group 2 entire suffix (.dev-r1234)
-            group 3 replace this with portage suffix (.dev-r)
-            group 4 suffix version (1234)
+        Regex match.groups():
+            * pkgfoo-1.0.dev-r1234
+            * group 1 pv major (1.0)
+            * group 2 replace this with portage suffix (.dev-r)
+            * group 3 suffix version (1234)
 
-        The order of the regex's is significant. For instance if you have
+        The order of the regexes is significant. For instance if you have
         .dev-r123, dev-r123 and -r123 you should order your regex's in
         that order.
+
+        The chronological portage release versions are:
+
+        * _alpha
+        * _beta
+        * _pre
+        * _rc
+        * release
+        * _p
+
+        **Example:**
+
+        >>> Enamer.parse_pv('foo.bar', '1.0b2')
+        ('foo-bar', '1.0_beta2', ['${PN/-/.}'], ['${PV/_beta/b}'])
 
         .. note::
             The number of regex's could have been reduced, but we use four
             number of match.groups every time to simplify the code
 
-        The _pre suffix is most-likely incorrect. There is no 'dev'
-        prefix used by portage, the 'earliest' there is is '_alpha'.
-        The chronological portage release versions are:
-        _alpha
-        _beta
-        _pre
-        _rc
-        release
-        _p
-
         """
         bad_suffixes = re.compile(
             r'((?:[._-]*)(?:dev|devel|final|stable|snapshot)$)', re.I)
+        revision_suffixes = re.compile(
+            r'(.*?)([\._-]*(?:r|patch|p)[\._-]*)([0-9]*)$', re.I)
         suf_matches = {
                 '_pre': [
                     r'(.*?)([\._-]*dev[\._-]*r?)([0-9]+)$',
-                    r'(.*?)([\._-]*(?:r|pre|preview)[\._-]*)([0-9]*)$',
+                    r'(.*?)([\._-]*(?:pre|preview)[\._-]*)([0-9]*)$',
                 ],
                 '_alpha': [
                     r'(.*?)([\._-]*(?:alpha|test)[\._-]*)([0-9]*)$',
@@ -214,7 +269,22 @@ class Enamer(object):
                 ],
         }
         rs_match = None
+        my_pn = my_pn or []
+        my_pv = my_pv or []
+        additional_version = ""
         log.debug("parse_pv: up_pv(%s)", up_pv)
+
+        rev_match = revision_suffixes.search(up_pv)
+        if rev_match:
+            pv = up_pv = rev_match.group(1)
+            replace_me = rev_match.group(2)
+            rev = rev_match.group(3)
+            additional_version = '.' + rev
+            my_pv.append("${PV: -%d}%s" % (len(additional_version), replace_me + rev))
+            log.debug("parse_pv: new up_pv(%s), additional_version(%s), my_pv(%s)",
+                up_pv, additional_version, my_pv)
+            # TODO: if ALSO suf_matches succeeds, it's not implemented
+
         for this_suf in suf_matches.keys():
             if rs_match:
                 break
@@ -232,49 +302,57 @@ class Enamer(object):
             replace_me = rs_match.group(2) #.dev-r
             rev = rs_match.group(3) #1234
             pv = major_ver + portage_suffix + rev
-            my_pv = "${PV/%s/%s}" % (portage_suffix, replace_me)
+            my_pv.append("${PV/%s/%s}" % (portage_suffix, replace_me))
             log.debug("parse_pv: major_ver(%s) replace_me(%s), rev(%s)", major_ver, replace_me, rev)
         else:
             # Single suffixes with no numeric component are simply removed.
             match = bad_suffixes.search(up_pv)
             if match:
                 suffix = match.groups()[0]
-                my_pv = "${PV}%s" % suffix
-                pn = up_pn
+                my_pv.append("${PV}%s" % suffix)
                 pv = up_pv[:-(len(suffix))]
 
-        my_pn, pn = cls.parse_pn(up_pn, my_pn)
+        pv = pv + additional_version
+        log.debug("parse_pv: pv(%s), my_pv(%s)", pv, my_pv)
+
+        pn, my_pn = cls.parse_pn(up_pn, my_pn)
         return pn, pv, my_pn, my_pv
 
     @classmethod
-    def parse_pn(cls, pn, my_pn=""):
+    def parse_pn(cls, pn, my_pn=None):
         """Convert PN to MY_PN if needed
 
-        :params my_pn:
-        :params pn:
-        :type pn:
-        :type my_pn:
-        :returns:
-        :rtype:
+        :params pn: Gentoo package name
+        :params my_pn: Bash substitutions to get original name
+        :type pn: string
+        :type my_pn: list
+        :returns: (PN, MY_PN)
+        :rtype: tuple of (string, list)
+
+        **Example:**
+
+        >>> Enamer.parse_pn('Test-Me')
+        ('test-me', ['Test-Me'])
+        >>> Enamer.parse_pn('test.me')
+        ('test-me', ['${PN/-/.}'])
 
         """
-        # TODO: make my_pn a list
+        my_pn = my_pn or []
         if not pn.islower():
             # up_pn is lower but uri has upper-case
-            log.debug('pn is not lowercase, converting to my_pn')
-            # TODO: $(echo "${variable}" | LC_ALL="C" tr '[:upper:]' '[:lower:]')
+            log.debug('parse_pn: pn is not lowercase, converting to my_pn')
             if not my_pn:
-                my_pn = pn
+                my_pn.append(pn)
             pn = pn.lower()
 
         if "." in pn:
-            log.debug("dot found in pn")
-            my_pn = '${PN/./-}'
+            log.debug("parse_pn: dot found in pn")
+            my_pn.append('${PN/-/.}')
             pn = pn.replace('.', '-')
 
         if " " in pn:
-            log.debug("space found in pn")
-            my_pn = '${PN/ /-}'
+            log.debug("parse_pn: space found in pn")
+            my_pn.append('${PN/-/ }')
             pn = pn.replace(' ', '-')
 
         #if not my_pn:
@@ -283,27 +361,30 @@ class Enamer(object):
                 #my_pn = ""
             #log.debug("set my_on to %s", my_pn)
 
-        log.debug("get_my_pn: my_pn(%s) pn(%s)", my_pn, pn)
-        return my_pn, pn
+        log.debug("parse_pn: my_pn(%s) pn(%s)", my_pn, pn)
+        return pn, my_pn
 
     @classmethod
     def sanitize_uri(cls, uri):
         """
         Return URI without any un-needed extension.
-        e.g. http://downloads.sourceforge.net/pythonreports/PythonReports-0.3.1.tar.gz?modtime=1182702645&big_mirror=0
-        would have everything after '?' stripped
 
         :param uri: URI to pacakge with no variable substitution
         :type uri: string
         :returns: URL without fragment, parameters and query
         :rtype: string
 
+        **Example:**
+
+        >>> Enamer.sanitize_uri('http://downloads.sourceforge.net/pythonreports/PythonReports-0.3.1.tar.gz?modtime=1182702645&big_mirror=0')
+        'http://downloads.sourceforge.net/pythonreports/PythonReports-0.3.1.tar.gz'
+
         """
         skinned_uri = urlparse.urlparse(uri)
         return urlparse.urlunparse(skinned_uri[:3] + ('',)*3)
 
     @classmethod
-    def get_vars(cls, uri, up_pn, up_pv, pn="", pv="", my_pn="", my_pv=""):
+    def get_vars(cls, uri, up_pn, up_pv, pn="", pv="", my_pn=None, my_pv=None):
         """
         Determine P* and MY_* ebuild variables
 
@@ -319,15 +400,15 @@ class Enamer(object):
         :type up_pv: string
         :type pn: string
         :type pv: string
-        :type my_pn: string
-        :type my_pv: string
+        :type my_pn: list
+        :type my_pv: list
         :returns:
             * pn -- Ebuild package name
             * pv -- Ebuild package version
             * p -- Ebuild whole package name (name + version)
             * my_p -- Upstream whole package name (name + version)
-            * my_pn -- Upstream package name
-            * my_pv -- Upstream package version
+            * my_pn -- Bash substitution for upstream package name
+            * my_pv -- Bash substitution for upstream package version
             * my_p_raw -- my_p extracted from SRC_URI
             * src_uri -- Ebuild SRC_URI with MY_P variable
         :rtype: dict
@@ -372,8 +453,23 @@ class Enamer(object):
         * Ebuild name: pkg-foo-1.0_beta1.ebuild
         * SRC_URI="http://www.foo.com/${P}.tbz2"
 
+        **Example:**
+
+        >>> d = Enamer.get_vars('http://www.foo.com/pkg.foo-1.0b1.tbz2', 'pkg.foo', '1.0b1')
+        >>> assert d['pn'] == 'pkg-foo'
+        >>> assert d['pv'] == '1.0_beta1'
+        >>> assert d['p'] == 'pkg-foo-1.0_beta1'
+        >>> assert d['my_pv'] == ['${PV/_beta/b}']
+        >>> assert d['my_pn'] == ['${PN/-/.}']
+        >>> assert d['my_p'] == '${MY_PN}-${MY_PV}'
+        >>> assert d['my_p_raw'] == 'pkg.foo-1.0b1'
+        >>> assert d['src_uri'] == 'http://www.foo.com/${MY_P}.tbz2'
+        >>> assert len(d) == 8
+
         """
         log.debug("get_vars: %r" % locals())
+        my_pn = my_pn or []
+        my_pv = my_pv or []
         my_p = ""
         INVALID_VERSION = False
         uri = cls.sanitize_uri(uri)
@@ -420,7 +516,7 @@ class Enamer(object):
         elif not pn and pv:
             pn = up_pn.lower()
 
-        my_pn, pn = cls.parse_pn(pn, my_pn)
+        pn, my_pn = cls.parse_pn(pn, my_pn)
 
         p = "%s-%s" % (pn, pv)
         log.debug("get_vars: p(%s)", p)
@@ -435,14 +531,14 @@ class Enamer(object):
         # Check if we need to use MY_P based on src's uri
         src_uri, my_p_raw = cls.get_my_p(uri)
         if my_p_raw == p:
-            my_pn = ''
+            my_pn = []
             my_p_raw = ''
             src_uri = src_uri.replace("${MY_P}", "${P}")
         elif my_pn or my_pv:
             src_uri, my_p_raw = cls.get_my_p(uri)
             log.debug("getting SRC_URI with ${MY_P}: %s %s %s", src_uri, my_p, my_p_raw)
         else:
-            src_uri, my_p, my_pn, my_p_raw = cls.get_src_uri(uri, my_pn)
+            src_uri, my_p, my_pn, my_p_raw = cls._get_src_uri(uri, my_pn)
             log.debug("getting SRC_URI: %s %s %s", src_uri, my_p, my_p_raw)
 
         log.debug("before MY_P guessing: %r", locals())
@@ -462,7 +558,7 @@ class Enamer(object):
         }
 
     @classmethod
-    def get_src_uri(cls, uri, my_pn):
+    def _get_src_uri(cls, uri, my_pn):
         """
 
         :param uri: HTTP URL package download link
@@ -472,16 +568,17 @@ class Enamer(object):
 
         """
         my_p = my_p_raw = ''
-        if cls.is_good_filename(uri):
-            src_uri, pn, pv = cls.get_components(uri)
+        if cls._is_good_filename(uri):
+            src_uri, pn, pv = cls._get_components(uri)
         else:
             src_uri, my_p = cls.get_my_p(uri)
-            pn, pv = cls.guess_components(my_p)
+            pn, pv = cls._guess_components(my_p)
             if pn and pv:
                 my_p_raw = my_p
-                my_pn, pn = cls.parse_pn(pn)
+                pn, my_pn = cls.parse_pn(pn)
                 if my_pn and my_pn != pn:
-                    my_p = my_p.replace(my_pn, "${MY_PN}")
+                    for one_my_pn in my_pn:
+                        my_p = my_p.replace(one_my_pn, "${MY_PN}")
                 else:
                     my_p = my_p.replace(pn, "${PN}")
                 my_p = my_p.replace(pv, "${PV}")
@@ -496,7 +593,12 @@ class Enamer(object):
 
         :param uri: HTTP URL to a package
         :returns: (uri with ${MY_P}, ${MY_P})
-        :rtype: string, string
+        :rtype: tuple of strings
+
+        **Example:**
+
+        >>> Enamer.get_my_p('http://www.foobar.com/foobar-1.0.tar.gz')
+        ('http://www.foobar.com/${MY_P}.tar.gz', 'foobar-1.0')
 
         """
         my_p = cls.get_filename(uri)

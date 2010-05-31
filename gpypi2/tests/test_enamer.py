@@ -4,13 +4,11 @@
 
 Test ``get_vars`` with all types of URI's we can come up with.
 
-Note:
------
+.. note::
 
-up_pn and up_pv are upstream's package name and package version respectively
-and not actually used in an ebuild. These are the names returned
-from yolklib/PyPI.
-
+    up_pn and up_pv are upstream's package name and package version respectively
+    and not actually used in an ebuild. These are the names returned
+    from yolklib/PyPI.
 
 """
 
@@ -105,6 +103,7 @@ class TestEnamer(BaseTestCase):
             "foo\n\tbar")
         self.assertEqual(Enamer.format_depend(['foo', 'bar', 'foobar', 'beyond']),
             "foo\n\tbar\n\tfoobar\n\tbeyond")
+        self.assertEqual(Enamer.format_depend([]), "")
 
     def test_get_vars1(self):
         """
@@ -119,8 +118,8 @@ class TestEnamer(BaseTestCase):
             {'pn': 'pkgfoo',
              'pv': '1.0',
              'p': 'pkgfoo-1.0',
-             'my_pn': '',
-             'my_pv': '',
+             'my_pn': [],
+             'my_pv': [],
              'my_p': '',
              'my_p_raw': '',
              'src_uri': 'http://www.foo.com/${P}.tbz2',
@@ -140,8 +139,8 @@ class TestEnamer(BaseTestCase):
             {'pn': 'pkgfoo',
              'pv': '1.0',
              'p': 'pkgfoo-1.0',
-             'my_pn': 'PkgFoo',
-             'my_pv': '',
+             'my_pn': ['PkgFoo'],
+             'my_pv': [],
              'my_p': '${MY_PN}-${PV}',
              'my_p_raw': 'PkgFoo-1.0',
              'src_uri': 'http://www.foo.com/${MY_P}.tbz2',
@@ -161,8 +160,8 @@ class TestEnamer(BaseTestCase):
             {'pn': 'pkgfoo',
              'pv': '1.0',
              'p': 'pkgfoo-1.0',
-             'my_pn': '',
-             'my_pv': '',
+             'my_pn': [],
+             'my_pv': [],
              'my_p': '',
              'my_p_raw': '',
              'src_uri': 'http://www.foo.com/${P}.tbz2',
@@ -184,8 +183,8 @@ class TestEnamer(BaseTestCase):
             {'pn': 'pkgfoo',
              'pv': '1.0',
              'p': 'pkgfoo-1.0',
-             'my_pn': 'PKGfoo',
-             'my_pv': '',
+             'my_pn': ['PKGfoo'],
+             'my_pv': [],
              'my_p': '${MY_PN}-${PV}',
              'my_p_raw': 'PKGfoo-1.0',
              'src_uri': 'http://www.foo.com/${MY_P}.tbz2',
@@ -205,8 +204,8 @@ class TestEnamer(BaseTestCase):
             {'pn': 'pkgfoo',
              'pv': '1.0',
              'p': 'pkgfoo-1.0',
-             'my_pn': 'pkgFOO',
-             'my_pv': '',
+             'my_pn': ['pkgFOO'],
+             'my_pv': [],
              'my_p': '${MY_PN}-${PV}',
              'my_p_raw': 'pkgFOO-1.0',
              'src_uri': 'http://www.foo.com/${MY_P}.tbz2',
@@ -222,15 +221,15 @@ class TestEnamer(BaseTestCase):
         up_pn = "PkgFoo"
         up_pv = "1.0"
         pv = "1.0"
-        my_pn = up_pn
-        my_pv = ""
+        my_pn = [up_pn]
+        my_pv = []
         uri = "http://www.foo.com/PkgFoo-1.0.tbz2"
         correct =\
             {'pn': 'pkgfoo',
              'pv': '1.0',
              'p': 'pkgfoo-1.0',
-             'my_pn': 'PkgFoo',
-             'my_pv': '',
+             'my_pn': ['PkgFoo'],
+             'my_pv': [],
              'my_p': '${MY_PN}-${PV}',
              'my_p_raw': 'PkgFoo-1.0',
              'src_uri': 'http://www.foo.com/${MY_P}.tbz2',
@@ -246,15 +245,15 @@ class TestEnamer(BaseTestCase):
         up_pv = "1.0"
         pn = ""
         pv = "1.0"
-        my_pv = ""
-        my_pn = "PkgFoo"
+        my_pv = []
+        my_pn = ["PkgFoo"]
         uri = "http://www.foo.com/PkgFoo-1.0.tbz2"
         correct =\
             {'pn': 'pkgfoo',
              'pv': '1.0',
              'p': 'pkgfoo-1.0',
-             'my_pn': 'PkgFoo',
-             'my_pv': '',
+             'my_pn': ['PkgFoo'],
+             'my_pv': [],
              'my_p': '${MY_PN}-${PV}',
              'my_p_raw': 'PkgFoo-1.0',
              'src_uri': 'http://www.foo.com/${MY_P}.tbz2',
@@ -273,8 +272,8 @@ class TestEnamer(BaseTestCase):
             {'pn': 'pkgfoo',
              'pv': '1.0',
              'p': 'pkgfoo-1.0',
-             'my_pn': '',
-             'my_pv': '${PV}dev',
+             'my_pn': [],
+             'my_pv': ['${PV}dev'],
              'my_p': '${PN}-${MY_PV}',
              'my_p_raw': 'pkgfoo-1.0dev',
              'src_uri': 'http://www.foo.com/${MY_P}.tbz2',
@@ -287,15 +286,16 @@ class TestEnamer(BaseTestCase):
         An existing -r123 suffix on upstream version
         is changed to _pre123
         """
+        # TODO: my_pv shouldn't include revision number
         up_pn = "pkgfoo"
         up_pv = "1.0-r123"
         uri = "http://www.foo.com/pkgfoo-1.0-r123.tbz2"
         correct = \
             {'pn': 'pkgfoo',
-             'pv': '1.0_pre123',
-             'p': 'pkgfoo-1.0_pre123',
-             'my_pn': '',
-             'my_pv': '${PV/_pre/-r}',
+             'pv': '1.0.123',
+             'p': 'pkgfoo-1.0.123',
+             'my_pn': [],
+             'my_pv': ['${PV: -4}-r123'],
              'my_p': '${PN}-${MY_PV}',
              'my_p_raw': 'pkgfoo-1.0-r123',
              'src_uri': 'http://www.foo.com/${MY_P}.tbz2',
@@ -312,10 +312,10 @@ class TestEnamer(BaseTestCase):
         uri = "http://www.foo.com/pkgfoo-1.0.dev-r1234.tbz2"
         correct = \
             {'pn': 'pkgfoo',
-             'pv': '1.0_pre1234',
-             'p': 'pkgfoo-1.0_pre1234',
-             'my_pn': '',
-             'my_pv': '${PV/_pre/.dev-r}',
+             'pv': '1.0.1234',
+             'p': 'pkgfoo-1.0.1234',
+             'my_pn': [],
+             'my_pv': ['${PV: -5}-r1234', '${PV}.dev'],
              'my_p': '${PN}-${MY_PV}',
              'my_p_raw': 'pkgfoo-1.0.dev-r1234',
              'src_uri': 'http://www.foo.com/${MY_P}.tbz2',
@@ -332,10 +332,10 @@ class TestEnamer(BaseTestCase):
         uri = "http://www.foo.com/pkgfoo-1.0dev-r1234.tbz2"
         correct = \
             {'pn': 'pkgfoo',
-             'pv': '1.0_pre1234',
-             'p': 'pkgfoo-1.0_pre1234',
-             'my_pn': '',
-             'my_pv': '${PV/_pre/dev-r}',
+             'pv': '1.0.1234',
+             'p': 'pkgfoo-1.0.1234',
+             'my_pn': [],
+             'my_pv': ['${PV: -5}-r1234', '${PV}dev'],
              'my_p': '${PN}-${MY_PV}',
              'my_p_raw': 'pkgfoo-1.0dev-r1234',
              'src_uri': 'http://www.foo.com/${MY_P}.tbz2',
@@ -354,8 +354,8 @@ class TestEnamer(BaseTestCase):
             {'pn': 'pkgfoo',
              'pv': '1.0_alpha4',
              'p': 'pkgfoo-1.0_alpha4',
-             'my_pn': '',
-             'my_pv': '${PV/_alpha/a}',
+             'my_pn': [],
+             'my_pv': ['${PV/_alpha/a}'],
              'my_p': '${PN}-${MY_PV}',
              'my_p_raw': 'pkgfoo-1.0a4',
              'src_uri': 'http://www.foo.com/${MY_P}.tbz2',
@@ -374,8 +374,8 @@ class TestEnamer(BaseTestCase):
             {'pn': 'pkgfoo',
              'pv': '1.0_beta1',
              'p': 'pkgfoo-1.0_beta1',
-             'my_pn': '',
-             'my_pv': '${PV/_beta/b}',
+             'my_pn': [],
+             'my_pv': ['${PV/_beta/b}'],
              'my_p': '${PN}-${MY_PV}',
              'my_p_raw': 'pkgfoo-1.0b1',
              'src_uri': 'http://www.foo.com/${MY_P}.tbz2',
@@ -394,8 +394,8 @@ class TestEnamer(BaseTestCase):
             {'pn': 'pkgfoo',
              'pv': '1.0_beta1',
              'p': 'pkgfoo-1.0_beta1',
-             'my_pn': '',
-             'my_pv': '${PV/_beta/-b}',
+             'my_pn': [],
+             'my_pv': ['${PV/_beta/-b}'],
              'my_p': '${PN}-${MY_PV}',
              'my_p_raw': 'pkgfoo-1.0-b1',
              'src_uri': 'http://www.foo.com/${MY_P}.tbz2',
@@ -414,8 +414,8 @@ class TestEnamer(BaseTestCase):
             {'pn': 'pkgfoo',
              'pv': '1.0_alpha4',
              'p': 'pkgfoo-1.0_alpha4',
-             'my_pn': '',
-             'my_pv': '${PV/_alpha/-a}',
+             'my_pn': [],
+             'my_pv': ['${PV/_alpha/-a}'],
              'my_p': '${PN}-${MY_PV}',
              'my_p_raw': 'pkgfoo-1.0-a4',
              'src_uri': 'http://www.foo.com/${MY_P}.tbz2',
@@ -435,8 +435,8 @@ class TestEnamer(BaseTestCase):
             {'pn': 'pkgfoo',
              'pv': '1.0_rc3',
              'p': 'pkgfoo-1.0_rc3',
-             'my_pn': '',
-             'my_pv': '${PV/_rc/-rc}',
+             'my_pn': [],
+             'my_pv': ['${PV/_rc/-rc}'],
              'my_p': '${PN}-${MY_PV}',
              'my_p_raw': 'pkgfoo-1.0-rc3',
              'src_uri': 'http://www.foo.com/${MY_P}.tbz2',
@@ -455,8 +455,8 @@ class TestEnamer(BaseTestCase):
             {'pn': 'pkgfoo',
              'pv': '1.0_rc3',
              'p': 'pkgfoo-1.0_rc3',
-             'my_pn': '',
-             'my_pv': '${PV/_rc/rc}',
+             'my_pn': [],
+             'my_pv': ['${PV/_rc/rc}'],
              'my_p': '${PN}-${MY_PV}',
              'my_p_raw': 'pkgfoo-1.0rc3',
              'src_uri': 'http://www.foo.com/${MY_P}.tbz2',
@@ -475,8 +475,8 @@ class TestEnamer(BaseTestCase):
             {'pn': 'pkgfoo',
              'pv': '1.0_rc3',
              'p': 'pkgfoo-1.0_rc3',
-             'my_pn': '',
-             'my_pv': '${PV/_rc/.rc}',
+             'my_pn': [],
+             'my_pv': ['${PV/_rc/.rc}'],
              'my_p': '${PN}-${MY_PV}',
              'my_p_raw': 'pkgfoo-1.0.rc3',
              'src_uri': 'http://www.foo.com/${MY_P}.tbz2',
@@ -497,8 +497,8 @@ class TestEnamer(BaseTestCase):
             {'pn': 'pkgfoo',
              'pv': '1.0_rc3',
              'p': 'pkgfoo-1.0_rc3',
-             'my_pn': 'PkgFoo',
-             'my_pv': '${PV/_rc/.rc}',
+             'my_pn': ['PkgFoo'],
+             'my_pv': ['${PV/_rc/.rc}'],
              'my_p': '${MY_PN}-${MY_PV}',
              'my_p_raw': 'PkgFoo-1.0.rc3',
              'src_uri': 'http://www.foo.com/${MY_P}.tbz2',
@@ -517,8 +517,8 @@ class TestEnamer(BaseTestCase):
             {'pn': 'pkgfoo',
              'pv': '1.0_rc3',
              'p': 'pkgfoo-1.0_rc3',
-             'my_pn': 'PkgFoo',
-             'my_pv': '${PV/_rc/-c}',
+             'my_pn': ['PkgFoo'],
+             'my_pv': ['${PV/_rc/-c}'],
              'my_p': '${MY_PN}-${MY_PV}',
              'my_p_raw': 'PkgFoo-1.0-c3',
              'src_uri': 'http://www.foo.com/${MY_P}.tbz2',
@@ -538,8 +538,8 @@ class TestEnamer(BaseTestCase):
             {'pn': 'pkgfoo',
              'pv': '1.0_rc3',
              'p': 'pkgfoo-1.0_rc3',
-             'my_pn': 'PkgFoo',
-             'my_pv': '${PV/_rc/.c}',
+             'my_pn': ['PkgFoo'],
+             'my_pv': ['${PV/_rc/.c}'],
              'my_p': '${MY_PN}-${MY_PV}',
              'my_p_raw': 'PkgFoo-1.0.c3',
              'src_uri': 'http://www.foo.com/${MY_P}.tbz2',
@@ -559,8 +559,8 @@ class TestEnamer(BaseTestCase):
             {'pn': 'pkgfoo',
              'pv': '1.0_rc3',
              'p': 'pkgfoo-1.0_rc3',
-             'my_pn': 'PkgFoo',
-             'my_pv': '${PV/_rc/c}',
+             'my_pn': ['PkgFoo'],
+             'my_pv': ['${PV/_rc/c}'],
              'my_p': '${MY_PN}-${MY_PV}',
              'my_p_raw': 'PkgFoo-1.0c3',
              'src_uri': 'http://www.foo.com/${MY_P}.tbz2',
@@ -590,8 +590,8 @@ class TestEnamer(BaseTestCase):
             {'pn': 'pkg-foo',
              'pv': '1.0',
              'p': 'pkg-foo-1.0',
-             'my_pn': '${PN/./-}',
-             'my_pv': '',
+             'my_pn': ['${PN/-/.}'],
+             'my_pv': [],
              'my_p': '${MY_PN}-${PV}',
              'my_p_raw': 'pkg.foo-1.0',
              'src_uri': 'http://www.foo.com/${MY_P}.tbz2',
@@ -608,8 +608,8 @@ class TestEnamer(BaseTestCase):
             {'pn': '3to2',
              'pv': '0.1_alpha3',
              'p': '3to2-0.1_alpha3',
-             'my_pn': '',
-             'my_pv': '${PV/_alpha/a}',
+             'my_pn': [],
+             'my_pv': ['${PV/_alpha/a}'],
              'my_p': '${PN}-${MY_PV}',
              'my_p_raw': '3to2-0.1a3',
              'src_uri': 'http://pypi.python.org/packages/source/3/3to2/${MY_P}.tar.gz',
@@ -626,8 +626,8 @@ class TestEnamer(BaseTestCase):
             {'pn': 'airspeed',
              'pv': '0.1_pre20091118',
              'p': 'airspeed-0.1_pre20091118',
-             'my_pn': '',
-             'my_pv': '${PV/_pre/dev-}',
+             'my_pn': [],
+             'my_pv': ['${PV/_pre/dev-}'],
              'my_p': '${PN}-${MY_PV}',
              'my_p_raw': 'airspeed-0.1dev_20091118',
              'src_uri': 'http://pypi.python.org/packages/any/a/airspeed/${MY_P}.tar.gz',
@@ -644,8 +644,8 @@ class TestEnamer(BaseTestCase):
              'pn': 'atreal-cmfeditions-unlocker',
              'pv': '1.0_beta1',
              'p': 'atreal-cmfeditions-unlocker-1.0_beta1',
-             'my_pn': '${PN/./-}',
-             'my_pv': '${PV/_beta/beta}',
+             'my_pn': ['${PN/-/.}'],
+             'my_pv': ['${PV/_beta/beta}'],
              'my_p': '${MY_PN}-${MY_PV}',
              'my_p_raw': 'atreal.cmfeditions.unlocker-1.0beta1',
              'src_uri': 'http://pypi.python.org/packages/2.4/a/atreal.cmfeditions.unlocker/${MY_P}.tar.gz',
@@ -662,8 +662,8 @@ class TestEnamer(BaseTestCase):
             {'pn': 'zif-sedna',
              'pv': '0.10_alpha2',
              'p': 'zif-sedna-0.10_alpha2',
-             'my_pn': '${PN/./-}',
-             'my_pv': '${PV/_alpha/alpha}',
+             'my_pn': ['${PN/-/.}'],
+             'my_pv': ['${PV/_alpha/alpha}'],
              'my_p': '${MY_PN}-${MY_PV}',
              'my_p_raw': 'zif.sedna-0.10alpha2',
              'src_uri': 'http://pypi.python.org/packages/2.5/z/zif.sedna/${MY_P}.tar.gz',
@@ -680,8 +680,8 @@ class TestEnamer(BaseTestCase):
             'pn': 'xapian-haystack',
             'pv': '1.1.3_beta',
             'p': 'xapian-haystack-1.1.3_beta',
-            'my_pn': '',
-            'my_pv': '${PV/_beta/beta}',
+            'my_pn': [],
+            'my_pv': ['${PV/_beta/beta}'],
             'my_p': '${PN}-${MY_PV}',
             'my_p_raw': 'xapian-haystack-1.1.3beta',
             'src_uri': 'http://pypi.python.org/packages/source/x/xapian-haystack/${MY_P}.tar.gz',
@@ -698,8 +698,8 @@ class TestEnamer(BaseTestCase):
             'pn': 'wtop',
             'pv': '0.6.2_alpha3',
             'p': 'wtop-0.6.2_alpha3',
-            'my_pn': '',
-            'my_pv': '${PV/_alpha/-test}',
+            'my_pn': [],
+            'my_pv': ['${PV/_alpha/-test}'],
             'my_p': '${PN}-${MY_PV}',
             'my_p_raw': 'wtop-0.6.2-test3',
             'src_uri': 'http://pypi.python.org/packages/source/w/wtop/${MY_P}.tar.gz',
@@ -718,8 +718,8 @@ class TestEnamer(BaseTestCase):
             'pn': 'zw.schema',
             'pv': '0.3.0_beta2',
             'p': 'zw.schema-0.3.0_beta2',
-            'my_pn': '',
-            'my_pv': '${PV/_beta/b}',
+            'my_pn': [],
+            'my_pv': ['${PV/_beta/b}'],
             'my_p': '${PN}-${MY_PV}',
             'my_p_raw': 'zw.schema-0.3.0b2.1',
             'src_uri': 'http://pypi.python.org/packages/source/z/zw.schema/${MY_P}.tar.gz',
@@ -736,8 +736,8 @@ class TestEnamer(BaseTestCase):
             'pn': 'optcomplete',
             'pv': '1.2',
             'p': 'optcomplete-1.2',
-            'my_pn': '',
-            'my_pv': '${PV}-devel',
+            'my_pn': [],
+            'my_pv': ['${PV}-devel'],
             'my_p': '${PN}-${MY_PV}',
             'my_p_raw': 'optcomplete-1.2-devel',
             'src_uri': 'http://pypi.python.org/packages/source/o/optcomplete/${MY_P}.tar.gz',
@@ -754,8 +754,8 @@ class TestEnamer(BaseTestCase):
             'pn': 'django-plus',
             'pv': '1.1.56',
             'p': 'django-plus-1.1.56',
-            'my_pn': '',
-            'my_pv': '${PV}-STABLE',
+            'my_pn': [],
+            'my_pv': ['${PV}-STABLE'],
             'my_p': '${PN}-${MY_PV}',
             'my_p_raw': 'django-plus-1.1.56-stable',
             'src_uri': 'http://pypi.python.org/packages/source/d/django-plus/${MY_P}.tar.gz',
@@ -774,7 +774,7 @@ class TestEnamer(BaseTestCase):
             'pv': '0.2.1',
             'p': 'community-codeswarm-0.2.1',
             'my_pn': ['lowercase', '${PN/ /-}'],
-            'my_pv': '',
+            'my_pv': [],
             'my_p': '${MY_PN}-${PV}',
             'my_p_raw': 'Community%20Codeswarm-0.2.1',
             'src_uri': 'http://pypi.python.org/packages/source/C/Community%20Codeswarm/${MY_P}.tar.gz',
@@ -791,8 +791,8 @@ class TestEnamer(BaseTestCase):
             'pn': 'django-plus',
             'pv': '1.1.56',
             'p': 'django-plus-1.1.56',
-            'my_pn': '',
-            'my_pv': '${PV}-STABLE',
+            'my_pn': [],
+            'my_pv': ['${PV}-STABLE'],
             'my_p': '${PN}-${MY_PV}',
             'my_p_raw': 'django-plus-1.1.56-stable',
             'src_uri': 'http://pypi.python.org/packages/source/d/django-plus/${MY_P}.tar.gz',
@@ -809,8 +809,8 @@ class TestEnamer(BaseTestCase):
             'pn': 'django-articles',
             'pv': '2.0.1_pre1',
             'p': 'django-articles-2.0.1_pre1',
-            'my_pn': '',
-            'my_pv': '${PV/_pre/-pre}',
+            'my_pn': [],
+            'my_pv': ['${PV/_pre/-pre}'],
             'my_p': '${PN}-${MY_PV}',
             'my_p_raw': 'django-articles-2.0.1-pre1',
             'src_uri': 'http://pypi.python.org/packages/source/d/django-articles/${MY_P}.tar.gz',
@@ -827,8 +827,8 @@ class TestEnamer(BaseTestCase):
             'pn': 'django-mako',
             'pv': '0.1.4_pre',
             'p': 'django-mako-0.1.4_pre',
-            'my_pn': '',
-            'my_pv': '${PV/_pre/pre}',
+            'my_pn': [],
+            'my_pv': ['${PV/_pre/pre}'],
             'my_p': '${PN}-${MY_PV}',
             'my_p_raw': 'django-mako-0.1.4pre',
             'src_uri': 'http://pypi.python.org/packages/source/d/django-mako/${MY_P}.tar.gz',
@@ -845,8 +845,8 @@ class TestEnamer(BaseTestCase):
             'pn': 'django-mako',
             'pv': '0.1.4_pre',
             'p': 'django-mako-0.1.4_pre',
-            'my_pn': '',
-            'my_pv': '${PV/_pre/pre}',
+            'my_pn': [],
+            'my_pv': ['${PV/_pre/pre}'],
             'my_p': '${PN}-${MY_PV}',
             'my_p_raw': 'django-mako-0.1.4pre',
             'src_uri': 'http://pypi.python.org/packages/source/d/django-mako/${MY_P}.tar.gz',
@@ -863,8 +863,8 @@ class TestEnamer(BaseTestCase):
             'pn': 'mrv',
             'pv': '1.0.0_pre2',
             'p': 'mrv-1.0.0_pre2',
-            'my_pn': '',
-            'my_pv': '${PV/_pre/-preview}',
+            'my_pn': [],
+            'my_pv': ['${PV/_pre/-preview}'],
             'my_p': '${PN}-${MY_PV}',
             'my_p_raw': 'mrv-1.0.0-Preview2',
             'src_uri': 'http://pypi.python.org/packages/source/M/MRV/${MY_P}.zip',
@@ -881,8 +881,8 @@ class TestEnamer(BaseTestCase):
             'pn': 'irssinotifier',
             'pv': '0.2.0_rc5',
             'p': 'irssinotifier-0.2.0_rc5',
-            'my_pn': '',
-            'my_pv': '${PV/_rc/RC}',
+            'my_pn': [],
+            'my_pv': ['${PV/_rc/RC}'],
             'my_p': '${PN}-${MY_PV}',
             'my_p_raw': 'IrssiNotifier-0.2.0RC5',
             'src_uri': 'http://pypi.python.org/packages/source/I/IrssiNotifier/${MY_P}.tar.bz2',
@@ -899,8 +899,8 @@ class TestEnamer(BaseTestCase):
             'pn': 'pydap',
             'pv': '3.0_rc8',
             'p': 'pydap-3.0_rc8',
-            'my_pn': '',
-            'my_pv': '${PV/_rc/.rc.}',
+            'my_pn': [],
+            'my_pv': ['${PV/_rc/.rc.}'],
             'my_p': '${PN}-${MY_PV}',
             'my_p_raw': 'Pydap-3.0.rc.8',
             'src_uri': 'http://pypi.python.org/packages/source/P/Pydap/${MY_P}.tar.gz',
@@ -917,8 +917,8 @@ class TestEnamer(BaseTestCase):
             'pn': 'clyther',
             'pv': '0.1_beta3',
             'p': 'clyther-0.1_beta3',
-            'my_pn': '',
-            'my_pv': '${PV/_beta/-beta-}',
+            'my_pn': [],
+            'my_pv': ['${PV/_beta/-beta-}'],
             'my_p': '${PN}-${MY_PV}',
             'my_p_raw': 'clyther-0.1-beta-3',
             'src_uri': 'http://pypi.python.org/packages/source/c/clyther/${MY_P}.tar.gz',
@@ -935,11 +935,102 @@ class TestEnamer(BaseTestCase):
             'pn': 'django-projector',
             'pv': '0.1.5_beta',
             'p': 'django-projector-0.1.5_beta',
-            'my_pn': '',
-            'my_pv': '${PV/_beta/.-beta}',
+            'my_pn': [],
+            'my_pv': ['${PV/_beta/.-beta}'],
             'my_p': '${PN}-${MY_PV}',
             'my_p_raw': 'django-projector-0.1.5.-beta',
             'src_uri': 'http://pypi.python.org/packages/source/d/django-projector/${MY_P}.tar.gz',
+        }
+        results = Enamer.get_vars(uri, up_pn, up_pv)
+        self.assertEqual(correct, results)
+
+    def test_get_vars43(self):
+        """v1.0.0 -> 1.0.0"""
+        up_pn = "bdflib"
+        up_pv = "v1.0.0"
+        uri = "http://pypi.python.org/packages/source/b/bdflib/bdflib-v1.0.0.tar.gz"
+        correct = {
+            'pn': 'bdflib',
+            'pv': '1.0.0',
+            'p': 'bdflib-1.0.0',
+            'my_pn': [],
+            'my_pv': ['v${PV}'],
+            'my_p': '${PN}-${MY_PV}',
+            'my_p_raw': 'bdflib-v1.0.0',
+            'src_uri': 'http://pypi.python.org/packages/source/b/bdflib/${MY_P}.tar.gz',
+        }
+        results = Enamer.get_vars(uri, up_pn, up_pv)
+        self.assertEqual(correct, results)
+
+    def test_get_vars43(self):
+        """0.1r1 -> 0.1.1"""
+        up_pn = "flamboyantsshd"
+        up_pv = "0.1r1"
+        uri = "http://pypi.python.org/packages/source/f/flamboyantsshd/flamboyantsshd-0.1r1.tar.gz"
+        correct = {
+            'pn': 'flamboyantsshd',
+            'pv': '0.1.1',
+            'p': 'flamboyantsshd-0.1.1',
+            'my_pn': [],
+            'my_pv': ['${PV: -2}r1'],
+            'my_p': '${PN}-${MY_PV}',
+            'my_p_raw': 'flamboyantsshd-0.1r1',
+            'src_uri': 'http://pypi.python.org/packages/source/f/flamboyantsshd/${MY_P}.tar.gz',
+        }
+        results = Enamer.get_vars(uri, up_pn, up_pv)
+        self.assertEqual(correct, results)
+
+    def test_get_vars44(self):
+        """1.0.r39 -> 1.0.39"""
+        up_pn = "fusepy"
+        up_pv = "1.0.r39"
+        uri = "http://pypi.python.org/packages/source/f/fusepy/fusepy-1.0.r39.tar.gz"
+        correct = {
+            'pn': 'fusepy',
+            'pv': '1.0.39',
+            'p': 'fusepy-1.0.39',
+            'my_pn': [],
+            'my_pv': ['${PV: -3}.r39'],
+            'my_p': '${PN}-${MY_PV}',
+            'my_p_raw': 'fusepy-1.0.r39',
+            'src_uri': 'http://pypi.python.org/packages/source/f/fusepy/${MY_P}.tar.gz',
+        }
+        results = Enamer.get_vars(uri, up_pn, up_pv)
+        self.assertEqual(correct, results)
+
+    def test_get_vars45(self):
+        """0.3.0patch1 -> 0.3.0.1"""
+        up_pn = "pymage"
+        up_pv = "0.3.0patch1"
+        uri = "http://pypi.python.org/packages/source/p/pymage/pymage-0.3.0patch1.tar.gz"
+        correct = {
+            'pn': 'pymage',
+            'pv': '0.3.0.1',
+            'p': 'pymage-0.3.0.1',
+            'my_pn': [],
+            'my_pv': ['${PV: -2}patch1'],
+            'my_p': '${PN}-${MY_PV}',
+            'my_p_raw': 'pymage-0.3.0patch1',
+            'src_uri': 'http://pypi.python.org/packages/source/p/pymage/${MY_P}.tar.gz',
+        }
+        results = Enamer.get_vars(uri, up_pn, up_pv)
+        self.assertEqual(correct, results)
+
+    def test_get_vars46(self):
+        """1.3p3 -> 1.3.3"""
+        # TODO: uri and my_p do not match
+        up_pn = "pyshipping"
+        up_pv = "1.3p3"
+        uri = "http://pypi.python.org/packages/source/p/pyShipping/pyShipping-1.3p3.tar.gz"
+        correct = {
+            'pn': 'pyshipping',
+            'pv': '1.3.3',
+            'p': 'pyshipping-1.3.3',
+            'my_pn': [],
+            'my_pv': ['${PV: -2}p3'],
+            'my_p': '${PN}-${MY_PV}',
+            'my_p_raw': 'pyShipping-1.3p3',
+            'src_uri': 'http://pypi.python.org/packages/source/p/pyShipping/${MY_P}.tar.gz',
         }
         results = Enamer.get_vars(uri, up_pn, up_pv)
         self.assertEqual(correct, results)
