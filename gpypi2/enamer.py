@@ -560,12 +560,6 @@ class Enamer(object):
     @classmethod
     def _get_src_uri(cls, uri, my_pn):
         """
-
-        :param uri: HTTP URL package download link
-        :type uri: string
-        :returns: (src_uri, my_p, my_pn, my_p_raw)
-        :rtype: string, string, string, string
-
         """
         my_p = my_p_raw = ''
         if cls._is_good_filename(uri):
