@@ -8,7 +8,9 @@ a python package to ebuild.
 """
 
 import urlparse
+import socket
 import logging
+import httplib
 import re
 import os
 
@@ -103,30 +105,6 @@ class Enamer(object):
         """
         return uri.startswith("http:") or uri.startswith("ftp:") or \
                 uri.startswith("mirror:") or uri.startswith("svn:")
-
-    @classmethod
-    def parse_sourceforge_uri(cls, uri):
-        """
-        Change URI to mirror://sourceforge format.
-        Also determines a homepage string which can be used if the metadata
-        doesn't have Home_page.
-
-        :param uri: URI to pacakage with no variable substitution
-        :type uri: string
-        :returns: tuple: (uri string, homepage string)
-        """
-        uri_out = homepage = ""
-        tst_uri = urlparse.urlparse(uri)
-
-        host = tst_uri[1]
-        upath = tst_uri[2]
-        if upath.startswith("/sourceforge"):
-            upath = upath[12:]
-        if ("sourceforge" in host) or (host.endswith("sf.net")):
-            uri_out = 'mirror://sourceforge%s' % upath
-            homepage = "http://sourceforge.net/projects/%s/" % \
-                       upath.split("/")[1]
-        return uri_out, homepage
 
     @classmethod
     def _is_good_filename(cls, uri):
@@ -699,3 +677,55 @@ class Enamer(object):
             return ""
 
         return "\n\t".join(dep_list)
+
+
+class SrcUriProvider(object):
+    """Base class for SRC_URI providers
+
+    :param uri: HTTP URI
+    :type uri: string
+    """
+
+    def __init__(self, uri):
+        self.uri = uri
+        self.up = urlparse.urlparse(self.uri)
+
+    def parse_uri(self):
+        """Parse URI to mirror//provider format.
+
+        Also determines a homepage string.
+
+        Inheriting class should override this method.
+        """
+        raise NotImplemented
+
+    def is_uri_online(self):
+        """Issue HTTP HEAD request to confirm location of URI"""
+        conn = httplib.HTTPConnection(self.up.netloc, timeout=3)
+        try:
+            conn.request('HEAD', self.up.path)
+            resp = conn.getresponse()
+        except (httplib.HTTPException, socket.error):
+            return False
+        return resp.status == 302
+
+
+class SourceForgeSrcUri(SrcUriProvider):
+    """"""
+
+    def parse_uri(self):
+        """ Change URI to mirror://sourceforge format. """
+
+        host = self.up[1]
+        upath = self.up[2]
+        if upath.startswith("/sourceforge"):
+            upath = upath[12:]
+        if ("sourceforge" in host) or (host.endswith("sf.net")):
+            uri_out = 'mirror://sourceforge%s' % upath
+            homepage = "http://sourceforge.net/projects/%s/" % \
+                       upath.split("/")[1]
+        return uri_out, homepage
+
+
+class PyPiSrcUri(SrcUriProvider):
+    """"""
