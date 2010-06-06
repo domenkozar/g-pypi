@@ -44,6 +44,6 @@ setup(name='g-pypi2',
         'ScriptTest',
     ],
     extras_require={
-        'docs': ["Sphinx"],
+        'docs': ["Sphinx", "sphinxcontrib-googleanalytics"],
     },
 )

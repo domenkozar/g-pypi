@@ -40,6 +40,7 @@ class Enamer(object):
        of customization support.
 
     """
+    VALID_EXTENSIONS = [".zip", ".tgz", ".tar.gz", ".tar.bz2", ".tbz2"]
 
     @classmethod
     def get_filename(cls, uri):
@@ -80,8 +81,7 @@ class Enamer(object):
         '/home/user/filename.unknown'
 
         """
-        valid_extensions = [".zip", ".tgz", ".tar.gz", ".tar.bz2", ".tbz2"]
-        for ext in valid_extensions:
+        for ext in cls.VALID_EXTENSIONS:
             if path.endswith(ext):
                 return path[:-len(ext)]
         return path
@@ -162,21 +162,35 @@ class Enamer(object):
         return pn, pv
 
     @classmethod
-    def parse_pv(cls, up_pn, up_pv, pn="", pv="", my_pn=None, my_pv=None):
+    def sanitize_uri(cls, uri):
         """
-        :param up_pn: Upstream package name
+        Return URI without any un-needed extension.
+
+        :param uri: URI to pacakge with no variable substitution
+        :type uri: string
+        :returns: URL without fragment, parameters and query
+        :rtype: string
+
+        **Example:**
+
+        >>> Enamer.sanitize_uri('http://downloads.sourceforge.net/pythonreports/PythonReports-0.3.1.tar.gz?modtime=1182702645&big_mirror=0')
+        'http://downloads.sourceforge.net/pythonreports/PythonReports-0.3.1.tar.gz'
+
+        """
+        skinned_uri = urlparse.urlparse(uri)
+        return urlparse.urlunparse(skinned_uri[:3] + ('',)*3)
+
+    @classmethod
+    def parse_pv(cls, up_pv, pv="", my_pv=None):
+        """Convert PV to MY_PV if needed
+
         :param up_pv: Upstream package version
-        :param pn: Converted Gentoo package name
         :param pv: Converted Gentoo package version
-        :param my_pn: Bash substitutions for original package name
         :param my_pv: Bash substitutions for original package version
-        :type up_pn: string
         :type up_pv: string
-        :type pn: string
         :type pv: string
-        :type my_pn: list
         :type my_pv: list
-        :returns: (PN, PV, MY_PN, MY_PV)
+        :returns: (:term:`PN`, :term:`PV``, :term:`MY_PN`, :term:`MY_PV`)
         :rtype: tuple of (string, string, list, list)
 
         Can't determine PV from upstream's version.
@@ -213,8 +227,8 @@ class Enamer(object):
 
         **Example:**
 
-        >>> Enamer.parse_pv('foo.bar', '1.0b2')
-        ('foo-bar', '1.0_beta2', ['${PN/-/.}'], ['${PV/_beta/b}'])
+        >>> Enamer.parse_pv('1.0b2')
+        ('1.0_beta2', ['${PV/_beta/b}'])
 
         .. note::
             The number of regex's could have been reduced, but we use four
@@ -247,7 +261,6 @@ class Enamer(object):
                 ],
         }
         rs_match = None
-        my_pn = my_pn or []
         my_pv = my_pv or []
         additional_version = ""
         log.debug("parse_pv: up_pv(%s)", up_pv)
@@ -293,18 +306,19 @@ class Enamer(object):
         pv = pv + additional_version
         log.debug("parse_pv: pv(%s), my_pv(%s)", pv, my_pv)
 
-        pn, my_pn = cls.parse_pn(up_pn, my_pn)
-        return pn, pv, my_pn, my_pv
+        return pv, my_pv
 
     @classmethod
-    def parse_pn(cls, pn, my_pn=None):
+    def parse_pn(cls, up_pn, pn="", my_pn=None):
         """Convert PN to MY_PN if needed
 
+        :params up_pn: Upstream package name
         :params pn: Gentoo package name
         :params my_pn: Bash substitutions to get original name
+        :type up_pn: string
         :type pn: string
         :type my_pn: list
-        :returns: (PN, MY_PN)
+        :returns: (:term:`PN`, :term:`MY_PN`)
         :rtype: tuple of (string, list)
 
         **Example:**
@@ -316,22 +330,22 @@ class Enamer(object):
 
         """
         my_pn = my_pn or []
-        if not pn.islower():
+        if not up_pn.islower():
             # up_pn is lower but uri has upper-case
             log.debug('parse_pn: pn is not lowercase, converting to my_pn')
             if not my_pn:
-                my_pn.append(pn)
-            pn = pn.lower()
+                my_pn.append(up_pn)
+            pn = up_pn.lower()
 
-        if "." in pn:
+        if "." in up_pn:
             log.debug("parse_pn: dot found in pn")
             my_pn.append('${PN/-/.}')
-            pn = pn.replace('.', '-')
+            pn = up_pn.replace('.', '-')
 
-        if " " in pn:
+        if " " in up_pn:
             log.debug("parse_pn: space found in pn")
             my_pn.append('${PN/-/ }')
-            pn = pn.replace(' ', '-')
+            pn = up_pn.replace(' ', '-')
 
         #if not my_pn:
             #my_pn = "-".join(p.split("-")[:-1])
@@ -341,25 +355,6 @@ class Enamer(object):
 
         log.debug("parse_pn: my_pn(%s) pn(%s)", my_pn, pn)
         return pn, my_pn
-
-    @classmethod
-    def sanitize_uri(cls, uri):
-        """
-        Return URI without any un-needed extension.
-
-        :param uri: URI to pacakge with no variable substitution
-        :type uri: string
-        :returns: URL without fragment, parameters and query
-        :rtype: string
-
-        **Example:**
-
-        >>> Enamer.sanitize_uri('http://downloads.sourceforge.net/pythonreports/PythonReports-0.3.1.tar.gz?modtime=1182702645&big_mirror=0')
-        'http://downloads.sourceforge.net/pythonreports/PythonReports-0.3.1.tar.gz'
-
-        """
-        skinned_uri = urlparse.urlparse(uri)
-        return urlparse.urlunparse(skinned_uri[:3] + ('',)*3)
 
     @classmethod
     def get_vars(cls, uri, up_pn, up_pv, pn="", pv="", my_pn=None, my_pv=None):
@@ -470,8 +465,8 @@ class Enamer(object):
             log.debug("%s is not valid portage atom", portage_atom)
 
         if INVALID_VERSION:
-            pn, pv, my_pn, my_pv = \
-                cls.parse_pv(up_pn, up_pv, pn, pv, my_pn, my_pv)
+            pv, my_pv = cls.parse_pv(up_pv, pv, my_pv)
+        pn, my_pn = cls.parse_pn(up_pn, pn, my_pn)
 
         # No PN or PV given on command-line, try upstream's name/version
         if not pn and not pv:
@@ -487,14 +482,11 @@ class Enamer(object):
             else:
                 pn = up_pn
                 pv = up_pv
-
         # Try upstream's version if it could't be determined from uri or cli option
         elif pn and not pv:
             pv = up_pv
         elif not pn and pv:
-            pn = up_pn.lower()
-
-        pn, my_pn = cls.parse_pn(pn, my_pn)
+            pn = up_pn
 
         p = "%s-%s" % (pn, pv)
         log.debug("get_vars: p(%s)", p)
@@ -503,19 +495,18 @@ class Enamer(object):
         atom = "=dev-python/%s-%s" % (pn, pv)
         if not portage_dep.isvalidatom(atom):
             log.error(locals())
-            raise GPyPiInvalidAtom("%s is not valid portage atom. "
-            "We could not determine right pn and/or pv." % atom)
+            raise GPyPiInvalidAtom("%s is not a valid portage atom. "
+                "We could not determine it from upstream pn(%s) and pv(%s)." %
+                (atom, up_pn, up_pv))
 
         # Check if we need to use MY_P based on src's uri
         src_uri, my_p_raw = cls.get_my_p(uri)
+        log.debug("getting SRC_URI with ${MY_P}: %s %s %s", src_uri, my_p, my_p_raw)
         if my_p_raw == p:
             my_pn = []
             my_p_raw = ''
             src_uri = src_uri.replace("${MY_P}", "${P}")
-        elif my_pn or my_pv:
-            src_uri, my_p_raw = cls.get_my_p(uri)
-            log.debug("getting SRC_URI with ${MY_P}: %s %s %s", src_uri, my_p, my_p_raw)
-        else:
+        elif not (my_pn or my_pv):
             src_uri, my_p, my_pn, my_p_raw = cls._get_src_uri(uri, my_pn)
             log.debug("getting SRC_URI: %s %s %s", src_uri, my_p, my_p_raw)
 
@@ -561,10 +552,10 @@ class Enamer(object):
 
     @classmethod
     def get_my_p(cls, uri):
-        """Return MY_P and new uri with MY_P in it
+        """Return :term:`MY_P` and new :term:`SRC_URI` with :term:`MY_P` in it.
 
         :param uri: HTTP URL to a package
-        :returns: (uri with ${MY_P}, ${MY_P})
+        :returns: (uri with ${MY_P}, ${MY_P_RAW})
         :rtype: tuple of strings
 
         **Example:**
@@ -573,9 +564,9 @@ class Enamer(object):
         ('http://www.foobar.com/${MY_P}.tar.gz', 'foobar-1.0')
 
         """
-        my_p = cls.get_filename(uri)
-        log.debug('get_my_p out of uri: %s', my_p)
-        return uri.replace(my_p, "${MY_P}"), my_p
+        my_p_raw = cls.get_filename(uri)
+        log.debug('get_my_p out of uri: %s', my_p_raw)
+        return uri.replace(my_p_raw, "${MY_P}"), my_p_raw
 
     @classmethod
     def convert_license(cls, license):
@@ -679,19 +670,72 @@ class Enamer(object):
         return "\n\t".join(dep_list)
 
 
-class SrcUriProvider(object):
-    """Base class for SRC_URI providers
+class SrcUriMetaclass(type):
+    """Metaclass for SrcUriNamer.
+
+    :attr:`providers` - list of plugins that subclass SrcUriNamer
+
+    """
+    providers = []
+
+    def __new__(mcls, name, bases, dict):
+        cls = type.__new__(mcls, name, bases, dict)
+        if name != 'SrcUriNamer':
+            mcls.providers.append(cls)
+        return cls
+
+
+class SrcUriNamer(object):
+    """Base class for :term:`SRC_URI` providers.
+
+    Main purpose of this class is to provide unique interface for
+    determining :term:`SRC_URI` variable.
+
+    Plugins should subclass this class and provide methods
+    for conversion.
 
     :param uri: HTTP URI
     :type uri: string
     """
+    __metaclass__ = SrcUriMetaclass
 
-    def __init__(self, uri):
+    def __init__(self, uri, enamer, up_pn, my_pn, up_pv, my_pv, my_p):
+        self.enamer = enamer
         self.uri = uri
         self.up = urlparse.urlparse(self.uri)
+        self.uris = []
+        self.homepages = []
+        self.up_pn = up_pn
+        self.my_pn = my_pn
+        self.up_pv = up_pv
+        self.my_pv = my_pv
+        self.my_p = my_p
 
-    def parse_uri(self):
-        """Parse URI to mirror//provider format.
+    def __call__(self):
+        """"""
+        for provider in self.providers:
+            p = provider(self.uri)
+            self.uris.extend(p.convert_src_uri())
+            if self.uris:
+                self.homepages.extend(p.convert_homepage())
+        return self.uris, self.homepages
+
+    def is_uri_online(self, uri):
+        """Issue HTTP HEAD request to confirm location of URI"""
+        log.debug('is_uri_online: %s', uri)
+        up = urlparse.urlparse(uri)
+        conn = httplib.HTTPConnection(up.netloc, timeout=3)
+        try:
+            conn.request('HEAD', up.path)
+            resp = conn.getresponse()
+        except (httplib.HTTPException, socket.error):
+            log.error('is_uri_online: timeout')
+            return False
+        log.error('is_uri_online: status(%r)' % resp.status)
+        return resp.status in (302, 200) # HEAD requests return s 302 FOUND when valid
+
+    def convert_src_uri(self, pn, my_pn, pv, my_pv):
+        """Parse URI to mirror://provider format.
 
         Also determines a homepage string.
 
@@ -699,33 +743,54 @@ class SrcUriProvider(object):
         """
         raise NotImplemented
 
-    def is_uri_online(self):
-        """Issue HTTP HEAD request to confirm location of URI"""
-        conn = httplib.HTTPConnection(self.up.netloc, timeout=3)
-        try:
-            conn.request('HEAD', self.up.path)
-            resp = conn.getresponse()
-        except (httplib.HTTPException, socket.error):
-            return False
-        return resp.status == 302
+    def is_valid_for_uri(self):
+        """
+        Is plugin the right one for uri mirror?
+
+        :rtype: bool
+        """
+        raise NotImplemented
+
+    def convert_homepage(self):
+        raise NotImplemented
 
 
-class SourceForgeSrcUri(SrcUriProvider):
+class SourceForgeSrcUri(SrcUriNamer):
     """"""
+    BASE_URI = 'http://sourceforge.net/projects/%(pn)s/files/%(pn)s/%(p)s/%(pn)s.%(ext)s/download'
+    BASE_HOMEPAGE = 'http://sourceforge.net/projects/%(pn)s/'
 
-    def parse_uri(self):
+    def convert_homepage(self):
+        pass#return self.BASE_HOMEPAGE % ('${MY_PN}') # TODO: determine MY_PN or PN
+
+    def convert_src_uri(self):
         """ Change URI to mirror://sourceforge format. """
+        pass
 
-        host = self.up[1]
-        upath = self.up[2]
-        if upath.startswith("/sourceforge"):
-            upath = upath[12:]
-        if ("sourceforge" in host) or (host.endswith("sf.net")):
-            uri_out = 'mirror://sourceforge%s' % upath
-            homepage = "http://sourceforge.net/projects/%s/" % \
-                       upath.split("/")[1]
-        return uri_out, homepage
+    def is_valid_for_uri(self, pn, pv, ext):
+        p = "%s-%s" % (pn, pv)
+        uri = self.BASE_URI % locals()
+        return self.is_uri_online(uri)
 
 
-class PyPiSrcUri(SrcUriProvider):
+class PyPiSrcUri(SrcUriNamer):
     """"""
+    BASE_URI = 'http://pypi.python.org/packages/source/%(pn0)s/%(pn)s/%(p)s.%(ext)s'
+    BASE_HOMEPAGE = 'http://pypi.python.org/pypi/%(pn)s'
+
+    def convert_homepage(self):
+        return self.BASE_HOMEPAGE % ('${MY_PN}') # TODO: determine MY_PN or PN
+
+    def convert_src_uri(self):
+        uris = []
+        for ext in self.enamer.VALID_EXTENSIONS:
+            if self.is_valid_for_uri(self.up_pn, self.up_pv, ext):
+                uri = BASE_URI % locals()
+                uris.append(uri)
+        return uris
+
+    def is_valid_for_uri(self, pn, pv, ext):
+        p = "%s-%s" % (pn, pv)
+        pn0 = pn[0]
+        uri = self.BASE_URI % locals()
+        return self.is_uri_online(uri)
