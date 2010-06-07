@@ -698,18 +698,33 @@ class SrcUriNamer(object):
     :type uri: string
     """
     __metaclass__ = SrcUriMetaclass
+    BASE_HOMEPAGE = None
+    BASE_URI = None
 
-    def __init__(self, uri, enamer, up_pn, my_pn, up_pv, my_pv, my_p):
-        self.enamer = enamer
-        self.uri = uri
-        self.up = urlparse.urlparse(self.uri)
+    def __init__(self, uri, enamer, up_pn, my_pn, up_pv, my_pv, my_p, p):
         self.uris = []
         self.homepages = []
+        self.uri = uri
+        self.up = urlparse.urlparse(uri)
+        self.enamer = enamer
         self.up_pn = up_pn
-        self.my_pn = my_pn
         self.up_pv = up_pv
+        self.my_pn = my_pn
         self.my_pv = my_pv
         self.my_p = my_p
+
+        # bash substitution variables
+        if my_pv:
+            self.pv = "${MY_PV}"
+        else:
+            self.pv = "${PV}"
+        if my_pn:
+            self.pn = "${MY_PN}"
+            self.pn0 = "${MY_PN:0:1}"
+        else:
+            self.pn = "${PN}"
+            self.pn0 = "${PN:0:1}"
+        self.p = my_p or "${P}"
 
     def __call__(self):
         """"""
@@ -734,14 +749,14 @@ class SrcUriNamer(object):
         log.error('is_uri_online: status(%r)' % resp.status)
         return resp.status in (302, 200) # HEAD requests return s 302 FOUND when valid
 
-    def convert_src_uri(self, pn, my_pn, pv, my_pv):
-        """Parse URI to mirror://provider format.
-
-        Also determines a homepage string.
-
-        Inheriting class should override this method.
-        """
-        raise NotImplemented
+    def convert_src_uri(self):
+        """"""
+        uris = []
+        for ext in self.enamer.VALID_EXTENSIONS:
+            if self.is_valid_for_uri():
+                uri = self.BASE_URI % self.__dict__
+                uris.append(uri)
+        return uris
 
     def is_valid_for_uri(self):
         """
@@ -749,48 +764,21 @@ class SrcUriNamer(object):
 
         :rtype: bool
         """
-        raise NotImplemented
+        uri = self.BASE_URI % __dict__
+        return self.is_uri_online(uri)
 
     def convert_homepage(self):
-        raise NotImplemented
+        """"""
+        return [self.BASE_HOMEPAGE % self.__dict__]
 
 
 class SourceForgeSrcUri(SrcUriNamer):
     """"""
-    BASE_URI = 'http://sourceforge.net/projects/%(pn)s/files/%(pn)s/%(p)s/%(pn)s.%(ext)s/download'
-    BASE_HOMEPAGE = 'http://sourceforge.net/projects/%(pn)s/'
-
-    def convert_homepage(self):
-        pass#return self.BASE_HOMEPAGE % ('${MY_PN}') # TODO: determine MY_PN or PN
-
-    def convert_src_uri(self):
-        """ Change URI to mirror://sourceforge format. """
-        pass
-
-    def is_valid_for_uri(self, pn, pv, ext):
-        p = "%s-%s" % (pn, pv)
-        uri = self.BASE_URI % locals()
-        return self.is_uri_online(uri)
+    BASE_URI = 'http://sourceforge.net/projects/%(pn)s/files/%(pn)s/%(pv)s/%(p)s.%(ext)s/download'
+    BASE_HOMEPAGE = 'http://sourceforge.net/projects/%(up_pn)s/'
 
 
 class PyPiSrcUri(SrcUriNamer):
     """"""
     BASE_URI = 'http://pypi.python.org/packages/source/%(pn0)s/%(pn)s/%(p)s.%(ext)s'
-    BASE_HOMEPAGE = 'http://pypi.python.org/pypi/%(pn)s'
-
-    def convert_homepage(self):
-        return self.BASE_HOMEPAGE % ('${MY_PN}') # TODO: determine MY_PN or PN
-
-    def convert_src_uri(self):
-        uris = []
-        for ext in self.enamer.VALID_EXTENSIONS:
-            if self.is_valid_for_uri(self.up_pn, self.up_pv, ext):
-                uri = BASE_URI % locals()
-                uris.append(uri)
-        return uris
-
-    def is_valid_for_uri(self, pn, pv, ext):
-        p = "%s-%s" % (pn, pv)
-        pn0 = pn[0]
-        uri = self.BASE_URI % locals()
-        return self.is_uri_online(uri)
+    BASE_HOMEPAGE = 'http://pypi.python.org/pypi/%(up_pn)s/'
