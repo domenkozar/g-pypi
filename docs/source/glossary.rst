@@ -25,3 +25,6 @@ Glossary
 
     HOMEPAGE
         Homepage address of a package.
+
+    LICENSE
+        License which software is copyrighted under

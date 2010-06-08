@@ -1,0 +1,17 @@
+{% block docs %}
+    if use doc; then
+        dodoc "${S}"/{{ docs_dir }}/*\n'
+    fi
+{% endblock %}
+
+{% block examples %}
+    if use examples; then
+        insinto /usr/share/doc/"${PF}"/examples
+        doins -r "${S}"/{{ examples_dir }}/*\n'
+    fi
+{% endblock %}
+
+{% block test %}
+        PYTHONPATH=. "${python}" setup.py nosetests || die "nosetests failed
+        PYTHONPATH=. "${python}" setup.py test || die "tests failed
+{% endblock %}

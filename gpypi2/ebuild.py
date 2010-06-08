@@ -11,11 +11,7 @@
 #         (These can be ignored individually with some in-line pylint-foo.)
 """
 
-ebuild.py
-=========
-
 Creates an ebuild
-
 
 """
 
@@ -23,24 +19,36 @@ import re
 import sys
 import os
 import logging
-from time import localtime
+from datetime import date
 
-from jinja2 import Template
+from jinja2 import Environment, PackageLoader
 from pygments import highlight
 from pygments.lexers import BashLexer
 from pygments.formatters import TerminalFormatter, HtmlFormatter
 from pygments.formatters import BBCodeFormatter
 from pkg_resources import resource_string, WorkingSet, Environment, Requirement
 
+from gpypi2 import __version__
 from gpypi2.portage_utils import PortageUtils
+from gpypi2.enamer import Enamer
 #from g_pypi.config import MyConfig
-from gpypi2 import enamer
 
 
 log = logging.getLogger(__name__)
 
 class Ebuild(object):
-    """Contains ebuild"""
+    """Contains ebuild
+
+    :attr:`DOC_DIRS` -- Possible locations for documentation
+
+    :attr:`EXAMPLES_DIRS` -- Possible locations for examples
+
+    :attr:`EBUILD_TEMPLATE` -- Template name
+
+    """
+    DOC_DIRS = ['doc', 'docs', 'documentation']
+    EXAMPLES_DIRS = ['example', 'examples', 'demo', 'demos']
+    EBUILD_TEMPLATE = 'ebuild.tmpl'
 
     def __init__(self, up_pn, up_pv, download_url):
         """Setup ebuild variables"""
@@ -51,35 +59,36 @@ class Ebuild(object):
         self.unpacked_dir = None
         self.ebuild_text = ""
         self.ebuild_path = ""
-        self.warnings = []
         self.setup = []
-        self.requires = []
+        self.requires = set()
         self.has_tests = None
 
-        # Variables that will be passed to the Cheetah template
+        # Variables that will be passed to the Jinja template
         self.vars = {
-                'need_python': '',
-                'python_modname': '',
-                'description': '',
-                'homepage': '',
-                'rdepend': [],
-                'depend': [],
-                'use': [],
-                'slot': '0',
-                's': '',
-                'keywords': self.config['keyword'],
-                'inherit': ['distutils'],
-                'esvn_repo_uri': '',
-                }
-        keyword = os.getenv('ACCEPT_KEYWORDS')
-        if keyword:
-            self.vars['keywords'] = keyword
-        if self.options.subversion:
+            'need_python': '',
+            'python_modname': '',
+            'description': '',
+            'homepage': '',
+            'rdepend': set(),
+            'depend': set(),
+            'use': set(),
+            'warnings': set(),
+            'slot': '0',
+            's': '',
+            'keywords': self.config['keyword'],
+            'inherit': set(['distutils']),
+            'gpypi_version': __version__,
+            'year': date.today().year,
+            'keywords': os.getenv('ACCEPT_KEYWORDS', ""),
+            #'esvn_repo_uri': '',
+        }
+        # TODO: implement support for SCM download urls
+        #if self.options.subversion:
             # Live svn version ebuild
-            self.options.pv = "9999"
-            self.vars['esvn_repo_uri'] = download_url
-            self.add_inherit("subversion")
-        ebuild_vars = enamer.get_vars(download_url, up_pn, up_pv, self.options.pn,
+            #self.options.pv = "9999"
+            #self.vars['esvn_repo_uri'] = download_url
+            #self.add_inherit("subversion")
+        ebuild_vars = Enamer.get_vars(download_url, up_pn, up_pv, self.options.pn,
                 self.options.pv, self.options.my_pn, self.options.my_pv)
         for key in ebuild_vars.keys():
             if not self.vars.has_key(key):
@@ -88,6 +97,7 @@ class Ebuild(object):
 
     def set_metadata(self, metadata):
         """Set metadata"""
+        # TODO: convert error
         if metadata:
             self.metadata = metadata
         else:
@@ -96,11 +106,12 @@ class Ebuild(object):
 
     def get_ebuild_vars(self, download_url):
         """Determine variables from SRC_URI"""
+        # TODO: get rid of if/else
         if self.options.pn or self.options.pv:
-            ebuild_vars = enamer.get_vars(download_url, self.vars['pn'],
+            ebuild_vars = Enamer.get_vars(download_url, self.vars['pn'],
                     self.vars['pv'], self.options.pn, self.options.pv)
         else:
-            ebuild_vars = enamer.get_vars(download_url, self.vars['pn'],
+            ebuild_vars = Enamer.get_vars(download_url, self.vars['pn'],
                     self.vars['pv'])
         if self.options.my_p:
             ebuild_vars['my_p'] = self.options.my_p
@@ -165,14 +176,9 @@ class Ebuild(object):
             elif "GPL" in my_license:
                 my_license = "GPL-2"
             else:
-                self.add_warning("Invalid LICENSE.")
+                self.vars['warnings'].add("Invalid LICENSE.")
 
         self.vars['license'] = "%s" % my_license
-
-    def add_warning(self, warning):
-        """Add warning to be shown after ebuild is created"""
-        if warning not in self.warnings:
-            self.warnings.append(warning.lstrip())
 
     def post_unpack(self):
         """Check setup.py for:
@@ -181,13 +187,14 @@ class Ebuild(object):
            # regex: install_requires[ \t]*=[ \t]*\[.*\],
 
         """
+        # TODO: mock setup.py to extract data dynamic rather than with regex
         name_regex = re.compile('''.*name\s*=\s*[',"]([\w+,\-,\_]*)[',"].*''')
         module_regex = \
                re.compile('''.*packages\s*=\s*\[[',"]([\w+,\-,\_]*)[',"].*''')
         if os.path.exists(self.unpacked_dir):
             setup_file = os.path.join(self.unpacked_dir, "setup.py")
             if not os.path.exists(setup_file):
-                self.add_warning("No setup.py found!")
+                self.vars['warnings'].add("No setup.py found!")
                 self.setup = ""
                 return
             self.setup = open(setup_file, "r").readlines()
@@ -202,7 +209,7 @@ class Ebuild(object):
                 #use it e.g. "module, not module.foo, module.bar"
                 mods = line.split(",")[0]
                 #if len(mods) > 1:
-                #    self.add_warning(line)
+                #    self.warnings.add(line)
                 module_match = module_regex.match(mods)
                 if module_match:
                     module_name = module_match.group(1)
@@ -225,6 +232,7 @@ class Ebuild(object):
         Return pkg_resources Distribution object from unpacked package
         """
         os.chdir(self.unpacked_dir)
+        # TODO: executable
         os.system("/usr/bin/python %s egg_info" % setup_file)
         ws = WorkingSet([find_egg_info_dir(self.unpacked_dir)])
         env = Environment()
@@ -279,7 +287,7 @@ class Ebuild(object):
                     if comparator1.startswith(">") and \
                             comparator2.startswith("<"):
                         comparator = "="
-                        self.add_warning("Couldn't resolve requirements. You will need to make sure the RDEPEND for %s is correct." % req)
+                        self.vars['warnings'].add("Couldn't resolve requirements. You will need to make sure the RDEPEND for %s is correct." % req)
                     else:
                         # Some packages have more than one comparator, i.e. cherrypy
                         # for turbogears has >=2.2,<3.0 which would translate to
@@ -310,19 +318,20 @@ class Ebuild(object):
                         self.add_rdepend("dev-python/%s" % pkg_name)
                 added_dep = True
             if not added_dep:
-                self.add_warning("Couldn't determine dependency: %s" % req)
+                self.vars['warnings'].add("Couldn't determine dependency: %s" % req)
 
     def add_setuptools_depend(self, req):
         """
         Add dependency for setuptools requirement
         After current ebuild is created, we check if portage has an
         ebuild for the requirement, if not create it.
-        @param req: requirement needed by ebuild
-        @type req: pkg_resources `Requirement` object
+
+        :param req: requirement needed by ebuild
+        :type req: pkg_resources `Requirement` object
+
         """
         log.debug("Found dependency: %s " % req)
-        if req not in self.requires:
-            self.requires.append(req)
+        self.requires.add(req)
 
     def get_docs(self):
         """
@@ -330,48 +339,33 @@ class Ebuild(object):
         and appropriate USE flags e.g. IUSE='doc examples'
 
         """
-        doc_dirs = ['doc', 'docs']
-        example_dirs = ['example', 'examples', 'demo', 'demos']
         have_docs = False
         have_examples = False
-        src_install = ''
-        for ddir in doc_dirs:
+
+        # TODO: add support for sphinx
+
+        for ddir in self.DOC_DIRS:
             if os.path.exists(os.path.join(self.unpacked_dir, ddir)):
-                have_docs = ddir
+                docs_dir = ddir
                 self.add_use("doc")
                 break
 
-        for edir in example_dirs:
+        for edir in self.EXAMPLES_DIRS:
             if os.path.exists(os.path.join(self.unpacked_dir, edir)):
-                have_examples = edir
+                examples_dir = edir
                 self.add_use("examples")
                 break
 
-        if have_docs or have_examples:
-            src_install += '\tdistutils_src_install\n'
-            if have_docs:
-                src_install += '\tif use doc; then\n'
-                src_install += '\t\tdodoc "${S}"/%s/*\n' % have_docs
-                src_install += '\tfi\n'
-            if have_examples:
-                src_install += '\tif use examples; then\n'
-                src_install += '\t\tinsinto /usr/share/doc/"${PF}"/examples\n'
-                src_install += '\t\tdoins -r "${S}"/%s/*\n' % have_examples
-                src_install += '\tfi'
-        return src_install
-
     def get_src_test(self):
         """Create src_test if tests detected"""
-        nose_test = '''\tPYTHONPATH=. "${python}" setup.py nosetests || die "tests failed"'''
-        regular_test = '''\tPYTHONPATH=. "${python}" setup.py test || die "tests failed"'''
-
         for line in self.setup:
             if "nose.collector" in line:
                 self.add_depend("test? ( dev-python/nose )")
                 self.add_use("test")
                 self.has_tests = True
                 return nose_test
-        # XXX Search for sub-directories
+
+        # TODO: Search for sub-directories
         if os.path.exists(os.path.join(self.unpacked_dir,
             "tests")) or os.path.exists(os.path.join(self.unpacked_dir,
                 "test")):
@@ -379,23 +373,20 @@ class Ebuild(object):
             return regular_test
 
     def add_use(self, use_flag):
-        """Add DEPEND"""
-        self.vars['use'].append(use_flag)
+        """Add USE flag"""
+        self.vars['use'].add(use_flag)
 
     def add_inherit(self, eclass):
         """Add inherit eclass"""
-        if eclass not in self.vars['inherit']:
-            self.vars['inherit'].append(eclass)
+        self.vars['inherit'].add(eclass)
 
     def add_depend(self, depend):
         """Add DEPEND ebuild variable"""
-        if depend not in self.vars['depend']:
-            self.vars['depend'].append(depend)
+        self.vars['depend'].add(depend)
 
     def add_rdepend(self, rdepend):
         """Add RDEPEND ebuild variable"""
-        if rdepend not in self.vars['rdepend']:
-            self.vars['rdepend'].append(rdepend)
+        self.vars['rdepend'].add(rdepend)
 
     def get_ebuild(self):
         """Generate ebuild from template"""
@@ -409,16 +400,16 @@ class Ebuild(object):
         if not self.options.pretend and self.unpacked_dir: # and \
             # not self.options.subversion:
             self.post_unpack()
-            functions['src_test'] = self.get_src_test()
-            functions['src_install'] = self.get_docs()
+            self.get_src_test()
+            self.get_docs()
+
         # *_f variables are formatted text ready for ebuild
+        # TODO: format_depend to filter
         self.vars['depend_f'] = format_depend(self.vars['depend'])
         self.vars['rdepend_f'] = format_depend(self.vars['rdepend'])
-        self.vars['use_f'] = " ".join(self.vars['use'])
-        self.vars['inherit_f'] = " ".join(self.vars['inherit'])
-        template = resource_string(__name__, EBUILD_TEMPLATE)
-        self.ebuild_text = \
-                Template(template, searchList=[self.vars, functions]).respond()
+
+        env = Environment(loader=PackageLoader('gpypi2', 'templates'))
+        self.ebuild_text = env.get_template(self.EBUILD_TEMPLATE).render(self.vars)
 
     def set_variables(self):
         """
@@ -430,11 +421,8 @@ class Ebuild(object):
             self.add_depend("app-arch/unzip")
         if self.vars['python_modname'] == self.vars['pn']:
             self.vars['python_modname'] = ""
-        self.vars['year'] = localtime()[0]
         # Add homepage, license and description from metadata
         self.add_metadata()
-        self.vars['warnings'] = self.warnings
-        self.vars['gpypi_version'] = get_version()
 
     def print_ebuild(self):
         """Print ebuild to stdout"""
@@ -447,6 +435,7 @@ class Ebuild(object):
             log.info(self.ebuild_text)
             return
 
+        # use pygments to print ebuild
         background = self.config['background']
         if self.options.format == "html":
             formatter = HtmlFormatter(full=True)
@@ -539,7 +528,7 @@ class Ebuild(object):
             self.vars["s"] = "${WORKDIR}"
             return
 
-        self.unpacked_dir = os.path.join(get_workdir(self.vars['p'], 
+        self.unpacked_dir = os.path.join(get_workdir(self.vars['p'],
             self.options.category), unpacked_dir)
         if unpacked_dir and unpacked_dir != self.vars['p']:
             if unpacked_dir == self.vars['my_p_raw']:
