@@ -6,9 +6,15 @@ Exceptions module
 =============================
 """
 
-class GPyPiException(Exception):
-    pass
 
+class GPyPiException(Exception):
+    """Core exception class, all exception inherit from this class."""
 
 class GPyPiInvalidAtom(GPyPiException):
-    pass
+    """Raised when determining Portage Atom did not succeed."""
+
+class GPyPiNoSetupFile(GPyPiException):
+    """Raised if no setup.py was found."""
+
+class GPyPiNoDistribution(GPyPiException):
+    """Raised if unpacked directory could not be found."""

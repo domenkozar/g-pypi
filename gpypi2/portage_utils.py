@@ -206,18 +206,10 @@ class PortageUtils(object):
 
     @classmethod
     def get_keyword(cls):
-        """Return first ACCEPT_KEYWORDS from /etc/make.conf"""
-        #Choose the first arch they have, in case of multiples.
+        """Return ARCH from portage environment or None"""
+        arch = ENV.get('ARCH', None)
 
-        try:
-            arch = ENV["ACCEPT_KEYWORDS"].split(' ')[0]
-        except KeyError:
-            log.error("No ACCEPT_KEYWORDS found, using ~x86")
-            arch = '~x86'
-
-        #New ebuilds must be ~arch
-
-        if not arch.startswith('~'):
+        if arch and not arch.startswith('~'):
             arch = "~%s" % arch
         return arch
 

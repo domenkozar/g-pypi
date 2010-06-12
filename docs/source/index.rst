@@ -27,8 +27,12 @@
 .. topic:: Features
 
    * use :term:`MY_P`, :term:`MY_PN`, :term:`MY_PV` when needed using Bash substitutions
-   * extract metadata from PyPi like :term:`HOMEPAGE`, :term:`DESCRIPTION`, :term:`LICENSE`, etc.
+   * extract metadata from PyPi like :term:`HOMEPAGE`, :term:`DESCRIPTION`, :term:`LICENSE`, :term:`AUTHOR`, etc.
+   * determine dependencies from :mod:`setuptools` `install_requires`, `tests_require`, `setup_requires` and `extras_require`
 
+.. note::
+    :mod:`gpypi2` is not meant to be a developer replacment.
+    It's goal is to make developers life easier.
 
 .. toctree::
     :maxdepth: 3

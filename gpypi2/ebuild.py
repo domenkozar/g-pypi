@@ -13,11 +13,15 @@
 
 Creates an ebuild
 
+
+.. currentmodule: gpypi2.ebuild
+
 """
 
 import re
 import sys
 import os
+import imp
 import logging
 from datetime import date
 
@@ -26,17 +30,21 @@ from pygments import highlight
 from pygments.lexers import BashLexer
 from pygments.formatters import TerminalFormatter, HtmlFormatter
 from pygments.formatters import BBCodeFormatter
-from pkg_resources import resource_string, WorkingSet, Environment, Requirement
+from pkg_resources import parse_requirements, resource_string, WorkingSet
+import setuptools
+import distutils.core
 
 from gpypi2 import __version__
 from gpypi2.portage_utils import PortageUtils
 from gpypi2.enamer import Enamer
+from gpypi2.exc import *
 #from g_pypi.config import MyConfig
 
 
 log = logging.getLogger(__name__)
 
-class Ebuild(object):
+# TODO: dependency can ge a string or list of strings
+class Ebuild(dict):
     """Contains ebuild
 
     :attr:`DOC_DIRS` -- Possible locations for documentation
@@ -53,190 +61,177 @@ class Ebuild(object):
     def __init__(self, up_pn, up_pv, download_url):
         """Setup ebuild variables"""
         self.pypi_pkg_name = up_pn
-        self.config = MyConfig.config
-        self.options = MyConfig.options
         self.metadata = None
         self.unpacked_dir = None
-        self.ebuild_text = ""
         self.ebuild_path = ""
         self.setup = []
         self.requires = set()
         self.has_tests = None
 
+        # TODO: add possibility to override pn, pv, my_pn, my_pv
+        ebuild_vars = Enamer.get_vars(download_url, up_pn, up_pv)
+
+        # TODO: implement support for SCM download urls
+        #if self.options.subversion:
+            #self.options.pv = "9999"
+            #self.vars['esvn_repo_uri'] = download_url
+            #self.add_inherit("subversion")
+
         # Variables that will be passed to the Jinja template
-        self.vars = {
+        d = {
+            'up_pn': up_pn,
+            'up_pv': up_pv,
+            'download_url': download_url,
             'need_python': '',
             'python_modname': '',
             'description': '',
-            'homepage': '',
+            'homepage': set(),
             'rdepend': set(),
             'depend': set(),
             'use': set(),
             'warnings': set(),
             'slot': '0',
             's': '',
-            'keywords': self.config['keyword'],
+            'tests_method': '',
             'inherit': set(['distutils']),
             'gpypi_version': __version__,
             'year': date.today().year,
-            'keywords': os.getenv('ACCEPT_KEYWORDS', ""),
-            #'esvn_repo_uri': '',
+            'keywords': PortageUtils.get_keyword() or '',
         }
-        # TODO: implement support for SCM download urls
-        #if self.options.subversion:
-            # Live svn version ebuild
-            #self.options.pv = "9999"
-            #self.vars['esvn_repo_uri'] = download_url
-            #self.add_inherit("subversion")
-        ebuild_vars = Enamer.get_vars(download_url, up_pn, up_pv, self.options.pn,
-                self.options.pv, self.options.my_pn, self.options.my_pv)
-        for key in ebuild_vars.keys():
-            if not self.vars.has_key(key):
-                self.vars[key] = ebuild_vars[key]
-        self.vars['p'] = '%s-%s' % (self.vars['pn'], self.vars['pv'])
+        d.update(ebuild_vars)
+        super(Ebuild, self).__init__(d)
+        self.set_ebuild_vars(download_url)
+
+    def __repr__(self):
+        return '<Ebuild (%r)>' % self
 
     def set_metadata(self, metadata):
         """Set metadata"""
-        # TODO: convert error
+        self.metadata = {}
         if metadata:
-            self.metadata = metadata
+            for key, value in metadata.iteritems():
+                new_key = key.lower().replace('-', '').replace('_', '')
+                self.metadata[new_key] = value
         else:
+            # TODO: convert error
             log.error("Package has no metadata.")
-            sys.exit(2)
 
-    def get_ebuild_vars(self, download_url):
-        """Determine variables from SRC_URI"""
-        # TODO: get rid of if/else
-        if self.options.pn or self.options.pv:
-            ebuild_vars = Enamer.get_vars(download_url, self.vars['pn'],
-                    self.vars['pv'], self.options.pn, self.options.pv)
-        else:
-            ebuild_vars = Enamer.get_vars(download_url, self.vars['pn'],
-                    self.vars['pv'])
-        if self.options.my_p:
-            ebuild_vars['my_p'] = self.options.my_p
+    def set_ebuild_vars(self, download_url):
+        """Determine variables from SRC_URI
+        """
+        # TODO: docs
+        ebuild_vars = Enamer.get_vars(download_url, self['up_pn'], self['up_pv'])
+        self.update(ebuild_vars)
 
-        if self.options.my_pv:
-            ebuild_vars['my_pv'] = self.options.my_pv
-
-        if self.options.my_pn:
-            ebuild_vars['my_pn'] = self.options.my_pn
-
-        if ebuild_vars.has_key('my_p'):
-            self.vars['my_p'] = ebuild_vars['my_p']
-            self.vars['my_p_raw'] = ebuild_vars['my_p_raw']
-        else:
-            self.vars['my_p'] = ''
-            self.vars['my_p_raw'] = ebuild_vars['my_p_raw']
-        if ebuild_vars.has_key('my_pn'):
-            self.vars['my_pn'] = ebuild_vars['my_pn']
-        else:
-            self.vars['my_pn'] = ''
-        if ebuild_vars.has_key('my_pv'):
-            self.vars['my_pv'] = ebuild_vars['my_pv']
-        else:
-            self.vars['my_pv'] = ''
-        self.vars['src_uri'] = ebuild_vars['src_uri']
+        if self['src_uri'].endswith('.zip') or self['src_uri'].endswith('.ZIP'):
+            self.add_depend("app-arch/unzip")
 
     def add_metadata(self):
         """
         Extract DESCRIPTION, HOMEPAGE, LICENSE ebuild variables from metadata
         """
-        # Various spellings for 'homepage'
-        homepages = ['Home-page', 'home_page', 'home-page']
-        for hpage in homepages:
-            if self.metadata.has_key(hpage):
-                self.vars['homepage'] = self.metadata[hpage]
+        if self.metadata.has_key('homepage'):
+            self['homepage'].add(self.metadata['homepage'])
 
         # There doesn't seem to be any specification for case
-        if self.metadata.has_key('Summary'):
-            self.vars['description'] = self.metadata['Summary']
         elif self.metadata.has_key('summary'):
-            self.vars['description'] = self.metadata['summary']
-        # Replace double quotes to keep bash syntax correct
-        if self.vars['description'] is None:
-            self.vars['description'] = ""
+            self['description'] = self.metadata['summary']
+        if self['description'] is None:
+            self['description'] = ""
         else:
-            self.vars['description'] = self.vars['description'].replace('"', "'")
+            # Replace double quotes to keep bash syntax correct
+            self['description'] = self['description'].replace('"', "'")
 
         my_license = ""
         if self.metadata.has_key('classifiers'):
             for data in self.metadata['classifiers']:
                 if data.startswith("License :: "):
-                    my_license = get_portage_license(data)
+                    my_license = PortageUtils.get_portage_license(data)
         if not my_license:
-            if self.metadata.has_key('License'):
-                my_license = self.metadata['License']
-            elif self.metadata.has_key('license'):
+            if self.metadata.has_key('license'):
                 my_license = self.metadata['license']
             my_license = "%s" % my_license
-        if not is_valid_license(my_license):
+        if not Enamer.is_valid_portage_license(my_license):
             if "LGPL" in my_license:
                 my_license = "LGPL-2.1"
             elif "GPL" in my_license:
                 my_license = "GPL-2"
             else:
-                self.vars['warnings'].add("Invalid LICENSE.")
+                self['warnings'].add("Invalid LICENSE.")
 
-        self.vars['license'] = "%s" % my_license
+        self['license'] = "%s" % my_license
 
     def post_unpack(self):
-        """Check setup.py for:
-           * PYTHON_MODNAME != $PN
-           * setuptools install_requires or extra_requires
-           # regex: install_requires[ \t]*=[ \t]*\[.*\],
+        """Perform finalization tasks:
+
+            * determine if :term:`PYTHON_MODNAME` is not :term:`PN` -- We inspect `packages`, `py_module` and `package_dir`
+
+            * get dependencies from `setup_requires`, `install_requires` and `extra_requires`
+
+            * figure out if we need to :term:`DEPEND`/:term:`RDEPEND` on :mod:`setuptools` -- We inspect if setup.py imports setuptools or pkg_resources
+
+            * calls :meth:`discover_docs_and_examples` and :meth:`discover_tests`
 
         """
-        # TODO: mock setup.py to extract data dynamic rather than with regex
-        name_regex = re.compile('''.*name\s*=\s*[',"]([\w+,\-,\_]*)[',"].*''')
-        module_regex = \
-               re.compile('''.*packages\s*=\s*\[[',"]([\w+,\-,\_]*)[',"].*''')
-        if os.path.exists(self.unpacked_dir):
-            setup_file = os.path.join(self.unpacked_dir, "setup.py")
-            if not os.path.exists(setup_file):
-                self.vars['warnings'].add("No setup.py found!")
-                self.setup = ""
-                return
-            self.setup = open(setup_file, "r").readlines()
+        # save original functions to undo monkeypaching at the end
+        temp_setup = setuptools.setup
+        temp_distutils = distutils.core.setup
 
-        setuptools_requires = module_name = package_name = None
-        for line in self.setup:
-            name_match = name_regex.match(line)
-            if name_match:
-                package_name = name_match.group(1)
-            elif "packages=" in line or "packages =" in line:
-                #XXX If we have more than one and only one is a top-level
-                #use it e.g. "module, not module.foo, module.bar"
-                mods = line.split(",")[0]
-                #if len(mods) > 1:
-                #    self.warnings.add(line)
-                module_match = module_regex.match(mods)
-                if module_match:
-                    module_name = module_match.group(1)
-            elif ("setuptools" in line) and ("import" in line):
-                setuptools_requires = True
-                #It requires setuptools to install pkg
-                self.add_depend("dev-python/setuptools")
+        # mock functions to get metadata
+        keywords = {}
+        def wrapper(**kw):
+            keywords.update(kw)
+
+        # monkeypatch setups
+        setuptools.setup = wrapper
+        distutils.core.setup = wrapper
+
+        setup_file = os.path.join(self.unpacked_dir, "setup.py")
+        if os.path.exists(self.unpacked_dir):
+            if not os.path.exists(setup_file):
+                raise GPyPiNoSetupFile("%s does not exists." % setup_file)
+            else:
+                # run setup file
+                imp.load_source('setup', setup_file)
+        else:
+            raise GPyPiNoDistribution("Unpacked dir could not be found: %s" % self.unpacked_dir)
+
+        # extract dependencies
+        self.install_requires = keywords.get('install_requires', '')
+        self.setup_requires = keywords.get('setup_requires', '')
+        self.extras_require = keywords.get('extras_require', '')
+        # TODO: handle dependencies
+
+        self.discover_docs_and_examples()
+        self.tests_require = keywords.get('tests_require', '')
+        self.discover_tests()
 
         if setuptools_requires:
             self.get_dependencies(setup_file)
         else:
-            log.warn("This package does not use setuptools so you will have to determine any dependencies if needed.")
+            self['warnings'].add("This package does not use setuptools so "
+                "you will have to determine any dependencies if needed.")
 
-        if module_name and package_name:
-            #    if module_name != package_name:
-            self.vars['python_modname'] = module_name
+        with open(setup_file) as f:
+            contents = f.read()
+            if 'setuptools' or 'pkg_resources' in contents:
+                self.add_depend('dev-python/setuptools')
+                self.add_rdepend('dev-python/setuptools')
 
-    def get_unpacked_dist(self, setup_file):
-        """
-        Return pkg_resources Distribution object from unpacked package
-        """
-        os.chdir(self.unpacked_dir)
-        # TODO: executable
-        os.system("/usr/bin/python %s egg_info" % setup_file)
-        ws = WorkingSet([find_egg_info_dir(self.unpacked_dir)])
-        env = Environment()
-        return env.best_match(Requirement.parse(self.pypi_pkg_name), ws)
+        # handle PYTHON_MODNAME
+        module_names = []
+        module_names.extend(keywords.get('packages', []))
+        module_names.extend(keywords.get('py_modules', []))
+        module_names.extend(keywords.get('package_dir', []).key())
+        # TODO: extract $(S) from package_dir
+
+        # set modname only if needed
+        if len(module_names) == 1 and module_names[0] != self['pn']:
+            self['python_modname'] = module_names
+
+        # undo monkeypatching
+        setuptools.setup = temp_setup
+        distutils.core.setup = temp_distutils
 
     def get_dependencies(self, setup_file):
         """
@@ -259,6 +254,7 @@ class Ebuild(object):
         * Build DEPEND string based on either a) or b)
 
         """
+        # TODO: utility for determining category
 
         # `dist` is a pkg_resources Distribution object
         dist = self.get_unpacked_dist(setup_file)
@@ -287,7 +283,7 @@ class Ebuild(object):
                     if comparator1.startswith(">") and \
                             comparator2.startswith("<"):
                         comparator = "="
-                        self.vars['warnings'].add("Couldn't resolve requirements. You will need to make sure the RDEPEND for %s is correct." % req)
+                        self['warnings'].add("Couldn't resolve requirements. You will need to make sure the RDEPEND for %s is correct." % req)
                     else:
                         # Some packages have more than one comparator, i.e. cherrypy
                         # for turbogears has >=2.2,<3.0 which would translate to
@@ -318,7 +314,7 @@ class Ebuild(object):
                         self.add_rdepend("dev-python/%s" % pkg_name)
                 added_dep = True
             if not added_dep:
-                self.vars['warnings'].add("Couldn't determine dependency: %s" % req)
+                self['warnings'].add("Couldn't determine dependency: %s" % req)
 
     def add_setuptools_depend(self, req):
         """
@@ -333,7 +329,7 @@ class Ebuild(object):
         log.debug("Found dependency: %s " % req)
         self.requires.add(req)
 
-    def get_docs(self):
+    def discover_docs_and_examples(self):
         """
         Add src_install for installing docs and examples if found
         and appropriate USE flags e.g. IUSE='doc examples'
@@ -356,80 +352,60 @@ class Ebuild(object):
                 self.add_use("examples")
                 break
 
-    def get_src_test(self):
-        """Create src_test if tests detected"""
+    def discover_tests(self):
+        """Determine :term:`DISTUTILS_SRC_TEST` if tests detected"""
+        # TODO: py.test and trial
+
+        for root, dirs, files in os.walk(self.unpacked_dir):
+            if 'tests' in files or 'test' in files:
+                self['tests_method'] = 'setup.py'
+
         for line in self.setup:
             if "nose.collector" in line:
-                self.add_depend("test? ( dev-python/nose )")
-                self.add_use("test")
-                self.has_tests = True
-                return nose_test
+                self['tests_method'] = 'nosetests'
 
-        # TODO: Search for sub-directories
-        if os.path.exists(os.path.join(self.unpacked_dir,
-            "tests")) or os.path.exists(os.path.join(self.unpacked_dir,
-                "test")):
-            self.has_tests = True
-            return regular_test
 
-    def add_use(self, use_flag):
-        """Add USE flag"""
-        self.vars['use'].add(use_flag)
+        if self['tests_method']:
+            pass
+            # TODO: add test dependencies if needed
 
-    def add_inherit(self, eclass):
-        """Add inherit eclass"""
-        self.vars['inherit'].add(eclass)
+    def update_with_s(self):
+        """Add ${S} to ebuild if needed"""
+        log.debug("Trying to determine ${S}, unpacking...")
+        unpacked_dir = find_s_dir(self['p'], self.options.category)
+        if unpacked_dir == "":
+            self["s"] = "${WORKDIR}"
+            return
 
-    def add_depend(self, depend):
-        """Add DEPEND ebuild variable"""
-        self.vars['depend'].add(depend)
+        self.unpacked_dir = os.path.join(get_workdir(self['p'],
+            self.options.category), unpacked_dir)
+        if unpacked_dir and unpacked_dir != self['p']:
+            if unpacked_dir == self['my_p_raw']:
+                unpacked_dir = '${MY_P}'
+            elif unpacked_dir == self['my_pn']:
+                unpacked_dir = '${MY_PN}'
+            elif unpacked_dir == self['pn']:
+                unpacked_dir = '${PN}'
 
-    def add_rdepend(self, rdepend):
-        """Add RDEPEND ebuild variable"""
-        self.vars['rdepend'].add(rdepend)
+            self["s"] = "${WORKDIR}/%s" % unpacked_dir
 
-    def get_ebuild(self):
+    def render(self):
         """Generate ebuild from template"""
-        self.set_variables()
-        functions = {
-            'src_unpack': "",
-            'src_compile': "",
-            'src_install': "",
-            'src_test': ""
-        }
-        if not self.options.pretend and self.unpacked_dir: # and \
-            # not self.options.subversion:
-            self.post_unpack()
-            self.get_src_test()
-            self.get_docs()
 
-        # *_f variables are formatted text ready for ebuild
-        # TODO: format_depend to filter
-        self.vars['depend_f'] = format_depend(self.vars['depend'])
-        self.vars['rdepend_f'] = format_depend(self.vars['rdepend'])
-
-        env = Environment(loader=PackageLoader('gpypi2', 'templates'))
-        self.ebuild_text = env.get_template(self.EBUILD_TEMPLATE).render(self.vars)
-
-    def set_variables(self):
-        """
-        Ensure all variables needed for ebuild template are set and formatted
-
-        """
-        if self.vars['src_uri'].endswith('.zip') or \
-                self.vars['src_uri'].endswith('.ZIP'):
-            self.add_depend("app-arch/unzip")
-        if self.vars['python_modname'] == self.vars['pn']:
-            self.vars['python_modname'] = ""
         # Add homepage, license and description from metadata
         self.add_metadata()
 
-    def print_ebuild(self):
-        """Print ebuild to stdout"""
+        #if not self.options.pretend and self.unpacked_dir: # and \
+        self.post_unpack()
+
+        env = Environment(loader=PackageLoader('gpypi2', 'templates'))
+        return env.get_template(self.EBUILD_TEMPLATE).render(self)
+
+    def print_formatted(self):
+        """Print ebuild with logging"""
         # No command-line set, config file says no formatting
-        log.info("%s/%s-%s" % \
-                (self.options.category, self.vars['pn'],
-        self.vars['pv']))
+        log.info("%s/%s-%s" % (self.options.category, self['pn'],
+            self['pv']))
         if self.options.format == "none" or \
             (self.config['format'] == "none" and not self.options.format):
             log.info(self.ebuild_text)
@@ -453,17 +429,17 @@ class Ebuild(object):
         log.info(highlight(self.ebuild_text,
                 BashLexer(),
                 formatter,
-                ))
+        ))
         self.show_warnings()
 
-    def create_ebuild(self):
+    def create(self):
         """Write ebuild and update it after unpacking and examining ${S}"""
         # Need to write the ebuild first so we can unpack it and check for $S
-        if self.write_ebuild(overwrite=self.options.overwrite):
+        if self.write(overwrite=self.options.overwrite):
             unpack_ebuild(self.ebuild_path)
             self.update_with_s()
             # Write ebuild again after unpacking and adding ${S}
-            self.get_ebuild()
+            ebuild = self.render()
             # Run any tests if found
             #if self.has_tests:
             #    run_tests(self.ebuild_path)
@@ -477,7 +453,7 @@ class Ebuild(object):
         # overwrite be used?
         return self.requires
 
-    def write_ebuild(self, overwrite=False):
+    def write(self, overwrite=False):
         """Write ebuild file"""
         # Use command-line overlay if specified, else the one in .g-pyprc
         if self.options.overlay:
@@ -493,13 +469,13 @@ class Ebuild(object):
                 sys.exit(1)
         else:
             overlay_path = self.config['overlay']
-        ebuild_dir = make_overlay_dir(self.options.category, self.vars['pn'], \
+        ebuild_dir = make_overlay_dir(self.options.category, self['pn'], \
                 overlay_path)
         if not ebuild_dir:
             log.error("Couldn't create overylay ebuild directory.")
             sys.exit(2)
         self.ebuild_path = os.path.join(ebuild_dir, "%s.ebuild" % \
-                self.vars['p'])
+                self['p'])
         if os.path.exists(self.ebuild_path) and not overwrite:
             # log.error("Ebuild exists. Use -o to overwrite.")
             log.warn("Ebuild exists, skipping: %s" % self.ebuild_path)
@@ -518,24 +494,18 @@ class Ebuild(object):
         for warning in self.warnings:
             log.warn("** Warning: %s" % warning)
 
-    def update_with_s(self):
-        """Add ${S} to ebuild if needed"""
-        #if self.options.subversion:
-        #    return
-        log.debug("Trying to determine ${S}, unpacking...")
-        unpacked_dir = find_s_dir(self.vars['p'], self.options.category)
-        if unpacked_dir == "":
-            self.vars["s"] = "${WORKDIR}"
-            return
+    def add_use(self, use_flag):
+        """Add USE flag"""
+        self['use'].add(use_flag)
 
-        self.unpacked_dir = os.path.join(get_workdir(self.vars['p'],
-            self.options.category), unpacked_dir)
-        if unpacked_dir and unpacked_dir != self.vars['p']:
-            if unpacked_dir == self.vars['my_p_raw']:
-                unpacked_dir = '${MY_P}'
-            elif unpacked_dir == self.vars['my_pn']:
-                unpacked_dir = '${MY_PN}'
-            elif unpacked_dir == self.vars['pn']:
-                unpacked_dir = '${PN}'
+    def add_inherit(self, eclass):
+        """Add inherit eclass"""
+        self['inherit'].add(eclass)
 
-            self.vars["s"] = "${WORKDIR}/%s" % unpacked_dir
+    def add_depend(self, depend):
+        """Add DEPEND ebuild variable"""
+        self['depend'].add(depend)
+
+    def add_rdepend(self, rdepend):
+        """Add RDEPEND ebuild variable"""
+        self['rdepend'].add(rdepend)

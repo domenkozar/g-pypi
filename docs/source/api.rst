@@ -15,7 +15,6 @@ Python API
 .. automodule:: gpypi2.ebuild
    :members:
    :undoc-members:
-   :inherited-members:
    :show-inheritance:
 
 :mod:`gpypi2.enamer` -- Utilities for metadata conversion

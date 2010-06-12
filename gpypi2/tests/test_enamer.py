@@ -73,15 +73,6 @@ class TestEnamer(BaseTestCase):
         self.assertFalse(Enamer.is_valid_portage_license("GPL"))
         self.assertTrue(Enamer.is_valid_portage_license("GPL-2"))
 
-    def test_format_depend(self):
-        self.assertEqual(Enamer.format_depend(['dev-python/foo-1.0']),
-            "dev-python/foo-1.0")
-        self.assertEqual(Enamer.format_depend(['foo', 'bar']),
-            "foo\n\tbar")
-        self.assertEqual(Enamer.format_depend(['foo', 'bar', 'foobar', 'beyond']),
-            "foo\n\tbar\n\tfoobar\n\tbeyond")
-        self.assertEqual(Enamer.format_depend([]), "")
-
     def test_get_vars1(self):
         """
         Absolute best-case scenario determines $P from up_pn, up_pv

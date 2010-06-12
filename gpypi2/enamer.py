@@ -190,7 +190,7 @@ class Enamer(object):
         :type up_pv: string
         :type pv: string
         :type my_pv: list
-        :returns: (:term:`PN`, :term:`PV``, :term:`MY_PN`, :term:`MY_PV`)
+        :returns: (:term:`PN`, :term:`PV`, :term:`MY_PN`, :term:`MY_PV`)
         :rtype: tuple of (string, string, list, list)
 
         Can't determine PV from upstream's version.
@@ -376,9 +376,9 @@ class Enamer(object):
         :type my_pn: list
         :type my_pv: list
         :returns:
-            * pn -- Ebuild package name
-            * pv -- Ebuild package version
-            * p -- Ebuild whole package name (name + version)
+            * pn -- Ebuild Gentoo package name
+            * pv -- Ebuild Gentoo package version
+            * p -- Ebuild Gentoo package name + version
             * my_p -- Upstream whole package name (name + version)
             * my_pn -- Bash substitution for upstream package name
             * my_pv -- Bash substitution for upstream package version
@@ -641,33 +641,6 @@ class Enamer(object):
 
         """
         return os.path.exists(os.path.join(PortageUtils.get_portdir(), "licenses", license))
-
-    @classmethod
-    def format_depend(cls, dep_list):
-        """
-        Return a formatted string for ebuild DEPEND/RDEPEND
-
-        :param dep_list: list of portage-ready dependency strings
-        :returns: formatted DEPEND or RDEPEND string ready for ebuild
-
-        * First dep has no tab, has linefeed
-        * Middle deps have tab and linefeed
-        * Last dep has tab, no linefeed
-
-        **Example:**
-
-        >>> print Enamer.format_depend(["dev-python/foo-1.0", #doctest: +NORMALIZE_WHITESPACE
-        ... ">=dev-python/bar-0.2", "dev-python/zaba"])
-        dev-python/foo-1.0
-            >=dev-python/bar-0.2
-            dev-python/zaba
-
-        """
-
-        if not len(dep_list):
-            return ""
-
-        return "\n\t".join(dep_list)
 
 
 class SrcUriMetaclass(type):
