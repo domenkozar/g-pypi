@@ -23,6 +23,7 @@ import sys
 import os
 import imp
 import logging
+from pprint import pformat
 from datetime import date
 
 from jinja2 import Environment, PackageLoader
@@ -103,7 +104,7 @@ class Ebuild(dict):
         self.set_ebuild_vars(download_url)
 
     def __repr__(self):
-        return '<Ebuild (%r)>' % self
+        return '<Ebuild (%s)>' % super(Ebuild, self).__repr__()
 
     def set_metadata(self, metadata):
         """Set metadata"""
@@ -200,18 +201,17 @@ class Ebuild(dict):
         self.install_requires = keywords.get('install_requires', '')
         self.setup_requires = keywords.get('setup_requires', '')
         self.extras_require = keywords.get('extras_require', '')
-        # TODO: handle dependencies
-
-        self.discover_docs_and_examples()
         self.tests_require = keywords.get('tests_require', '')
+
+        # dependencies resolving
+        self.get_dependencies(self.install_requires)
+        self.get_dependencies(self.setup_requires)
+        # TODO: handle setup as depend instead of rdepend
+        self.get_dependencies(self.extras_requires)
+        self.discover_docs_and_examples()
         self.discover_tests()
 
-        if setuptools_requires:
-            self.get_dependencies(setup_file)
-        else:
-            self['warnings'].add("This package does not use setuptools so "
-                "you will have to determine any dependencies if needed.")
-
+        # check dependency on setuptools
         with open(setup_file) as f:
             contents = f.read()
             if 'setuptools' or 'pkg_resources' in contents:
@@ -222,8 +222,10 @@ class Ebuild(dict):
         module_names = []
         module_names.extend(keywords.get('packages', []))
         module_names.extend(keywords.get('py_modules', []))
-        module_names.extend(keywords.get('package_dir', []).key())
+        module_names.extend(filter(None, keywords.get('package_dir', []).keys()))
         # TODO: extract $(S) from package_dir
+        # TODO: support provides/requires keyword
+        # http://docs.python.org/distutils/setupscript.html#relationships-between-distributions-and-packages
 
         # set modname only if needed
         if len(module_names) == 1 and module_names[0] != self['pn']:
@@ -233,9 +235,14 @@ class Ebuild(dict):
         setuptools.setup = temp_setup
         distutils.core.setup = temp_distutils
 
-    def get_dependencies(self, setup_file):
+    def get_dependencies(self, vanilla_requirements, if_use=None):
         """
         Generate DEPEND/RDEPEND strings
+
+        :param requirements:
+        :param if_use: :term:`USE` that must be set to download dependencies
+        :type requirements: string or list
+        :type if_use: string
 
         * Run setup.py egg_info so we can get the setuptools requirements
           (dependencies)
@@ -254,67 +261,65 @@ class Ebuild(dict):
         * Build DEPEND string based on either a) or b)
 
         """
-        # TODO: utility for determining category
+        category = 'dev-python'
+        # TODO: enamer for determining category
+        requirements = parse_requirements(vanilla_requirements)
 
-        # `dist` is a pkg_resources Distribution object
-        dist = self.get_unpacked_dist(setup_file)
-        if not dist:
-            # Should only happen if ebuild had 'install_requires' in it but
-            # for some reason couldn't extract egg_info
-            log.warn("Couldn't acquire Distribution obj for %s" % \
-                    self.unpacked_dir)
-            return
-
-        for req in dist.requires():
+        for req in requirements:
             added_dep = False
-            pkg_name = req.project_name.lower()
+            extras = req.extras
+            pn = Enamer.parse_pn(req.project_name)[0] or req.project_name
+            log.debug('get_dependencies: pn(%s)' % pn)
+            # add setuptools dependency for later dependency generating
+            self.add_setuptools_depend(req)
             if not len(req.specs):
-                self.add_setuptools_depend(req)
-                self.add_rdepend("dev-python/%s" % pkg_name)
-                added_dep = True
                 # No version of requirement was specified so we only add
-                # dev-python/pkg_name
+                # dev-python/pn
+                self.add_rdepend(Enamer.construct_atom(pn, category, uses=extras, if_use=if_use))
+                added_dep = True
             else:
                 comparator, ver = req.specs[0]
-                self.add_setuptools_depend(req)
+                ver = Enamer.parse_pv(ver)[0] or ver
+                log.debug('get_dependencies: pv(%s)' % ver)
                 if len(req.specs) > 1:
-                    comparator1, ver = req.specs[0]
-                    comparator2, ver = req.specs[1]
+                    # Some packages have more than one comparator, i.e. cherrypy
+                    # for turbogears has cherrpy>=2.2,<3.0 which would translate to
+                    # portage's =dev-python/cherrypy-2.2*
+                    comparator1, ver1 = req.specs[0]
+                    comparator2, ver2 = req.specs[1]
                     if comparator1.startswith(">") and \
                             comparator2.startswith("<"):
                         comparator = "="
+                        # TODO: more specific info about req
+                        # TODO: use blockers
                         self['warnings'].add("Couldn't resolve requirements. You will need to make sure the RDEPEND for %s is correct." % req)
                     else:
-                        # Some packages have more than one comparator, i.e. cherrypy
-                        # for turbogears has >=2.2,<3.0 which would translate to
-                        # portage's =dev-python/cherrypy-2.2*
-                        log.warn(" **** Requirement %s has multi-specs ****" % req)
-                        self.add_rdepend("dev-python/%s" % pkg_name)
+                        # TODO: more specific info about req
+                        self['warnings'].add("Couldn't resolve requirements. You will need to make sure the RDEPEND for %s is correct." % req)
+                        self.add_rdepend(Enamer.construct_atom(pn, category, uses=extras, if_use=if_use))
                         break
                 # Requirement.specs is a list of (comparator,version) tuples
                 if comparator == "==":
                     comparator = "="
-                if valid_cpn("%sdev-python/%s-%s" % (comparator, pkg_name, ver)):
-                    self.add_rdepend("%sdev-python/%s-%s" % (comparator, pkg_name, ver))
+                if PortageUtils.valid_cpn(Enamer.construct_atom(pn, category, ver, comparator, uses=extras)):
+                    self.add_rdepend(Enamer.construct_atom(pn, category, ver, comparator, uses=extras, if_use=if_use))
                 else:
-                    log.info(\
-                            "Invalid PV in dependency: (Requirement %s) %sdev-python/%s-%s" \
-                            % (req, comparator, pkg_name, ver)
-                            )
-                    installed_pv = get_installed_ver("dev-python/%s" % pkg_name)
+                    log.debug("Invalid PV in dependency: (Requirement %s) %s" % (req, temp_cpn))
+                    installed_pv = PortageUtils.get_installed_ver(
+                        Enamer.construct_atom(pn, category, uses=extras, if_use=if_use)
+                    )
                     if installed_pv:
-                        self.add_rdepend(">=dev-python/%s-%s" % \
-                                (pkg_name, installed_pv))
-                    else:
                         # If we have it installed, use >= installed version
+                        self.add_rdepend(Enamer.construct_atom(pn, category, installed_pv, '>=', uses=extras, if_use=if_use))
+                    else:
                         # If package has invalid version and we don't have
                         # an ebuild in portage, just add PN to DEPEND, no 
                         # version. This means the dep ebuild will have to
                         # be created by adding --MY_? options using the CLI
-                        self.add_rdepend("dev-python/%s" % pkg_name)
+                        self.add_rdepend(Enamer.construct_atom(pn, category, uses=extras, if_use=if_use))
                 added_dep = True
             if not added_dep:
-                self['warnings'].add("Couldn't determine dependency: %s" % req)
+                self['warnings'].add("Could not determine dependency: %s" % req)
 
     def add_setuptools_depend(self, req):
         """
@@ -364,10 +369,8 @@ class Ebuild(dict):
             if "nose.collector" in line:
                 self['tests_method'] = 'nosetests'
 
-
         if self['tests_method']:
-            pass
-            # TODO: add test dependencies if needed
+            self.get_dependencies(self.tests_require, 'test')
 
     def update_with_s(self):
         """Add ${S} to ebuild if needed"""

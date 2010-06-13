@@ -15,14 +15,6 @@ import re
 import os
 
 from portage import pkgsplit
-try:
-    # portage >=2.2
-    from portage import dep as portage_dep
-    from portage import exception as portage_exception
-except ImportError:
-    # portage <=2.1
-    from portage import portage_dep
-    from portage import portage_exception
 
 from gpypi2.portage_utils import PortageUtils
 from gpypi2.exc import *
@@ -460,7 +452,7 @@ class Enamer(object):
                 log.debug("We have a version with a -r### suffix")
 
         portage_atom = "=dev-python/%s-%s" % (up_pn, up_pv)
-        if not portage_dep.isvalidatom(portage_atom):
+        if not PortageUtils.valid_cpn(portage_atom):
             INVALID_VERSION = True
             log.debug("%s is not valid portage atom", portage_atom)
 
@@ -493,7 +485,7 @@ class Enamer(object):
 
         # Make sure we have a valid P
         atom = "=dev-python/%s-%s" % (pn, pv)
-        if not portage_dep.isvalidatom(atom):
+        if not PortageUtils.valid_cpn(atom):
             log.error(locals())
             raise GPyPiInvalidAtom("%s is not a valid portage atom. "
                 "We could not determine it from upstream pn(%s) and pv(%s)." %
@@ -642,6 +634,33 @@ class Enamer(object):
         """
         return os.path.exists(os.path.join(PortageUtils.get_portdir(), "licenses", license))
 
+    @classmethod
+    def construct_atom(cls, pn, category, pv=None, operator="", uses=None, if_use=None):
+        """
+        Construct atom from given parts.
+
+        :param pn:
+        :param category:
+        :param pv:
+        :param operator:
+        :type pn: string
+        :type category: string
+        :type pv: string
+        :type operator: string
+        :returns: Portage Atom
+
+        """
+        atom = "%(operator)s%(category)s/%(pn)s" % locals()
+        if pv:
+            atom += '-%(pv)s' % locals()
+
+        if uses:
+            atom += '[%s]' % ",".join(uses)
+
+        if if_use:
+            atom = ('%s? ' % if_use) + atom
+
+        return atom
 
 class SrcUriMetaclass(type):
     """Metaclass for SrcUriNamer.
