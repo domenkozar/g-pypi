@@ -22,6 +22,7 @@ from gpypi2.exc import *
 
 log = logging.getLogger(__name__)
 
+
 class Enamer(object):
     """Ebuild namer
 
@@ -75,7 +76,7 @@ class Enamer(object):
         """
         for ext in cls.VALID_EXTENSIONS:
             if path.endswith(ext):
-                return path[:-len(ext)]
+                return path[: - len(ext)]
         return path
 
     @classmethod
@@ -170,7 +171,7 @@ class Enamer(object):
 
         """
         skinned_uri = urlparse.urlparse(uri)
-        return urlparse.urlunparse(skinned_uri[:3] + ('',)*3)
+        return urlparse.urlunparse(skinned_uri[:3] + ('',) * 3)
 
     @classmethod
     def parse_pv(cls, up_pv, pv="", my_pv=None):
@@ -293,7 +294,7 @@ class Enamer(object):
             if match:
                 suffix = match.groups()[0]
                 my_pv.append("${PV}%s" % suffix)
-                pv = up_pv[:-(len(suffix))]
+                pv = up_pv[: - (len(suffix))]
 
         pv = pv + additional_version
         log.debug("parse_pv: pv(%s), my_pv(%s)", pv, my_pv)
@@ -610,8 +611,7 @@ class Enamer(object):
             "W3C License": "WC3",
             "zlib/libpng License": "ZLIB",
             "Zope Public License": "ZPL",
-            "Public Domain": "public-domain"
-            }
+            "Public Domain": "public-domain"}
         return known_licenses.get(my_license, "")
 
     @classmethod
@@ -661,6 +661,19 @@ class Enamer(object):
             atom = ('%s? ' % if_use) + atom
 
         return atom
+
+    @classmethod
+    def convert_category(cls, pn, metadata):
+        """Determine Portage category for package
+
+        :param pn:
+        :param metadata:
+        :type pn: string
+        :type metadata: dict
+
+        """
+        return 'dev-python'
+
 
 class SrcUriMetaclass(type):
     """Metaclass for SrcUriNamer.

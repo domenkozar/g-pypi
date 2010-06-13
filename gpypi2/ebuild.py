@@ -2,7 +2,7 @@
 # pylint: disable-msg=C0103,C0301,E0611,W0511
 
 # Reasons for pylint disable-msg's
-# 
+#
 # E0611 - No name 'resource_string' in module 'pkg_resources'
 #         No name 'BashLexer' in module 'pygments.lexers'
 #         No name 'TerminalFormatter' in module 'pygments.formatters'
@@ -18,12 +18,10 @@ Creates an ebuild
 
 """
 
-import re
 import sys
 import os
 import imp
 import logging
-from pprint import pformat
 from datetime import date
 
 from jinja2 import Environment, PackageLoader
@@ -31,7 +29,7 @@ from pygments import highlight
 from pygments.lexers import BashLexer
 from pygments.formatters import TerminalFormatter, HtmlFormatter
 from pygments.formatters import BBCodeFormatter
-from pkg_resources import parse_requirements, resource_string, WorkingSet
+from pkg_resources import parse_requirements
 import setuptools
 import distutils.core
 
@@ -43,6 +41,7 @@ from gpypi2.exc import *
 
 
 log = logging.getLogger(__name__)
+
 
 # TODO: dependency can ge a string or list of strings
 class Ebuild(dict):
@@ -121,21 +120,21 @@ class Ebuild(dict):
         """Determine variables from SRC_URI
         """
         # TODO: docs
-        ebuild_vars = Enamer.get_vars(download_url, self['up_pn'], self['up_pv'])
-        self.update(ebuild_vars)
+        d = Enamer.get_vars(download_url, self['up_pn'], self['up_pv'])
+        self.update(d)
 
-        if self['src_uri'].endswith('.zip') or self['src_uri'].endswith('.ZIP'):
+        if self['src_uri'].lower().endswith('.zip'):
             self.add_depend("app-arch/unzip")
 
     def add_metadata(self):
         """
         Extract DESCRIPTION, HOMEPAGE, LICENSE ebuild variables from metadata
         """
-        if self.metadata.has_key('homepage'):
+        if 'homepage' in self.metadata:
             self['homepage'].add(self.metadata['homepage'])
 
         # There doesn't seem to be any specification for case
-        elif self.metadata.has_key('summary'):
+        elif 'summary' in self.metadata:
             self['description'] = self.metadata['summary']
         if self['description'] is None:
             self['description'] = ""
@@ -144,12 +143,12 @@ class Ebuild(dict):
             self['description'] = self['description'].replace('"', "'")
 
         my_license = ""
-        if self.metadata.has_key('classifiers'):
+        if 'classifiers' in self.metadata:
             for data in self.metadata['classifiers']:
                 if data.startswith("License :: "):
                     my_license = PortageUtils.get_portage_license(data)
         if not my_license:
-            if self.metadata.has_key('license'):
+            if 'license' in self.metadata:
                 my_license = self.metadata['license']
             my_license = "%s" % my_license
         if not Enamer.is_valid_portage_license(my_license):
@@ -180,6 +179,7 @@ class Ebuild(dict):
 
         # mock functions to get metadata
         keywords = {}
+
         def wrapper(**kw):
             keywords.update(kw)
 
@@ -261,13 +261,13 @@ class Ebuild(dict):
         * Build DEPEND string based on either a) or b)
 
         """
-        category = 'dev-python'
         # TODO: enamer for determining category
         requirements = parse_requirements(vanilla_requirements)
 
         for req in requirements:
             added_dep = False
             extras = req.extras
+            category = Enamer.convert_category(req.project_name, self.metadata)
             pn = Enamer.parse_pn(req.project_name)[0] or req.project_name
             log.debug('get_dependencies: pn(%s)' % pn)
             # add setuptools dependency for later dependency generating
@@ -305,15 +305,15 @@ class Ebuild(dict):
                     self.add_rdepend(Enamer.construct_atom(pn, category, ver, comparator, uses=extras, if_use=if_use))
                 else:
                     log.debug("Invalid PV in dependency: (Requirement %s) %s" % (req, temp_cpn))
-                    installed_pv = PortageUtils.get_installed_ver(
-                        Enamer.construct_atom(pn, category, uses=extras, if_use=if_use)
-                    )
+                    installed_pv = PortageUtils.\
+                        get_installed_ver(Enamer.\
+                        construct_atom(pn, category, uses=extras, if_use=if_use))
                     if installed_pv:
                         # If we have it installed, use >= installed version
                         self.add_rdepend(Enamer.construct_atom(pn, category, installed_pv, '>=', uses=extras, if_use=if_use))
                     else:
                         # If package has invalid version and we don't have
-                        # an ebuild in portage, just add PN to DEPEND, no 
+                        # an ebuild in portage, just add PN to DEPEND, no
                         # version. This means the dep ebuild will have to
                         # be created by adding --MY_? options using the CLI
                         self.add_rdepend(Enamer.construct_atom(pn, category, uses=extras, if_use=if_use))
@@ -340,20 +340,17 @@ class Ebuild(dict):
         and appropriate USE flags e.g. IUSE='doc examples'
 
         """
-        have_docs = False
-        have_examples = False
-
         # TODO: add support for sphinx
 
         for ddir in self.DOC_DIRS:
             if os.path.exists(os.path.join(self.unpacked_dir, ddir)):
-                docs_dir = ddir
+                self['docs_dir'] = ddir
                 self.add_use("doc")
                 break
 
         for edir in self.EXAMPLES_DIRS:
             if os.path.exists(os.path.join(self.unpacked_dir, edir)):
-                examples_dir = edir
+                self['examples_dir'] = edir
                 self.add_use("examples")
                 break
 
@@ -447,10 +444,10 @@ class Ebuild(dict):
             #if self.has_tests:
             #    run_tests(self.ebuild_path)
             # We must overwrite initial skeleton ebuild
-            self.write_ebuild(overwrite=True)
-            self.print_ebuild()
+            self.write(ebuild, overwrite=True)
+            self.print_formatted(ebuild)
             log.info("Your ebuild is here: " + self.ebuild_path)
-        # If ebuild already exists, we don't unpack and get dependencies 
+        # If ebuild already exists, we don't unpack and get dependencies
         # because they must exist.
         # We should add an option to force creating dependencies or should
         # overwrite be used?
@@ -462,10 +459,10 @@ class Ebuild(dict):
         if self.options.overlay:
             overlay_name = self.options.overlay
             overlays = get_repo_names()
-            if overlays.has_key(overlay_name):
+            if overlay_name in overlay:
                 overlay_path = overlays[overlay_name]
             else:
-                log.error("Couldn't find overylay/repository by that"+
+                log.error("Couldn't find overylay/repository by that" +
                         " name. I know about these:")
                 for repo in sorted(overlays.keys()):
                     log.error("  " + repo.ljust(18) + overlays[repo])
