@@ -26,9 +26,14 @@
 
 .. topic:: Features
 
+   * write ebuilds to overlay or stdout (formatted in ansi color, html and bbcode)
    * use :term:`MY_P`, :term:`MY_PN`, :term:`MY_PV` when needed using Bash substitutions
    * extract metadata from PyPi like :term:`HOMEPAGE`, :term:`DESCRIPTION`, :term:`LICENSE`, :term:`AUTHOR`, etc.
-   * determine dependencies from :mod:`setuptools` `install_requires`, `tests_require`, `setup_requires` and `extras_require`
+   * determine :term:`RDEPEND` / :term:`DEPEND` from :mod:`setuptools`: `install_requires`, `tests_require`, `setup_requires` and `extras_require`
+   * determine :term:`PYTHON_MODNAME` from :mod:`setuptools`: `packages`, `py_modules` and `package_dir`
+   * determine :term:`S` by unpacking ebuild
+   * discovers :term:`DOCS` variable and/or `Sphinx documentation <http://sphinx.pocoo.org/>`_
+   * discovers :mod:`nosetests` and `setup.py test`
 
 .. note::
     :mod:`gpypi2` is not meant to be a developer replacment.

@@ -45,7 +45,14 @@ log = logging.getLogger(__name__)
 
 # TODO: dependency can ge a string or list of strings
 class Ebuild(dict):
-    """Contains ebuild
+    """Contains, populates and renders an ebuild.
+
+    :param up_pn: Upstream package name
+    :param up_pv: Upstream package version
+    :param download_url: Download link for a package
+    :type up_pn: string
+    :type up_pv: string
+    :type download_url: string
 
     :attr:`DOC_DIRS` -- Possible locations for documentation
 
@@ -56,10 +63,9 @@ class Ebuild(dict):
     """
     DOC_DIRS = ['doc', 'docs', 'documentation']
     EXAMPLES_DIRS = ['example', 'examples', 'demo', 'demos']
-    EBUILD_TEMPLATE = 'ebuild.tmpl'
+    EBUILD_TEMPLATE = 'ebuild.jinja'
 
     def __init__(self, up_pn, up_pv, download_url):
-        """Setup ebuild variables"""
         self.pypi_pkg_name = up_pn
         self.metadata = None
         self.unpacked_dir = None
@@ -67,9 +73,6 @@ class Ebuild(dict):
         self.setup = []
         self.requires = set()
         self.has_tests = None
-
-        # TODO: add possibility to override pn, pv, my_pn, my_pv
-        ebuild_vars = Enamer.get_vars(download_url, up_pn, up_pv)
 
         # TODO: implement support for SCM download urls
         #if self.options.subversion:
@@ -98,7 +101,6 @@ class Ebuild(dict):
             'year': date.today().year,
             'keywords': PortageUtils.get_keyword() or '',
         }
-        d.update(ebuild_vars)
         super(Ebuild, self).__init__(d)
         self.set_ebuild_vars(download_url)
 
@@ -106,7 +108,11 @@ class Ebuild(dict):
         return '<Ebuild (%s)>' % super(Ebuild, self).__repr__()
 
     def set_metadata(self, metadata):
-        """Set metadata"""
+        """Set metadata.
+
+        :param metadata: Meta information about ebuild
+        :type metadata: dict
+        """
         self.metadata = {}
         if metadata:
             for key, value in metadata.iteritems():
@@ -117,9 +123,14 @@ class Ebuild(dict):
             log.error("Package has no metadata.")
 
     def set_ebuild_vars(self, download_url):
-        """Determine variables from SRC_URI
+        """Calls :meth:`gpypi2.enamer.Enamer.get_vars` and
+        updates instance variables.
+
+        :param download_url: Download link for a package
+        :type download_url: string
+
         """
-        # TODO: docs
+        # TODO: add possibility to override pn, pv, my_pn, my_pv
         d = Enamer.get_vars(download_url, self['up_pn'], self['up_pv'])
         self.update(d)
 
@@ -127,8 +138,9 @@ class Ebuild(dict):
             self.add_depend("app-arch/unzip")
 
     def add_metadata(self):
-        """
-        Extract DESCRIPTION, HOMEPAGE, LICENSE ebuild variables from metadata
+        """Extract :term:`DESCRIPTION`, :term:`HOMEPAGE`,
+        :term:`LICENSE` ebuild variables from metadata.
+
         """
         if 'homepage' in self.metadata:
             self['homepage'].add(self.metadata['homepage'])
@@ -164,13 +176,18 @@ class Ebuild(dict):
     def post_unpack(self):
         """Perform finalization tasks:
 
-            * determine if :term:`PYTHON_MODNAME` is not :term:`PN` -- We inspect `packages`, `py_module` and `package_dir`
+            * determine if :term:`PYTHON_MODNAME` is not
+              :term:`PN` -- We inspect `packages`, `py_module` and `package_dir`
 
-            * get dependencies from `setup_requires`, `install_requires` and `extra_requires`
+            * get dependencies from `setup_requires`,
+              `install_requires` and `extra_requires`
 
-            * figure out if we need to :term:`DEPEND`/:term:`RDEPEND` on :mod:`setuptools` -- We inspect if setup.py imports setuptools or pkg_resources
+            * figure out if we need to :term:`DEPEND`/:term:`RDEPEND` on
+              :mod:`setuptools` -- We inspect if `setup.py` imports
+              :mod:`setuptools` or :mod:`pkg_resources`
 
-            * calls :meth:`discover_docs_and_examples` and :meth:`discover_tests`
+            * calls :meth:`Ebuild.discover_docs_and_examples`
+              and :meth:`Ebuild.discover_tests`
 
         """
         # save original functions to undo monkeypaching at the end
@@ -195,7 +212,8 @@ class Ebuild(dict):
                 # run setup file
                 imp.load_source('setup', setup_file)
         else:
-            raise GPyPiNoDistribution("Unpacked dir could not be found: %s" % self.unpacked_dir)
+            raise GPyPiNoDistribution("Unpacked dir could not be found: %s"\
+                % self.unpacked_dir)
 
         # extract dependencies
         self.install_requires = keywords.get('install_requires', '')
@@ -225,7 +243,8 @@ class Ebuild(dict):
         module_names.extend(filter(None, keywords.get('package_dir', []).keys()))
         # TODO: extract $(S) from package_dir
         # TODO: support provides/requires keyword
-        # http://docs.python.org/distutils/setupscript.html#relationships-between-distributions-and-packages
+        # http://docs.python.org/distutils/setupscript.html
+        # #relationships-between-distributions-and-packages
 
         # set modname only if needed
         if len(module_names) == 1 and module_names[0] != self['pn']:
@@ -237,31 +256,16 @@ class Ebuild(dict):
 
     def get_dependencies(self, vanilla_requirements, if_use=None):
         """
-        Generate DEPEND/RDEPEND strings
+        Generate :term:`DEPEND` / :term:`RDEPEND` strings.
 
-        :param requirements:
-        :param if_use: :term:`USE` that must be set to download dependencies
-        :type requirements: string or list
+        :param vanilla_requirements: **require_\*** contents from `setup.py`
+        :param if_use: :term:`USE` flag that must be set
+            to download dependencies
+        :type vanilla_requirements: string or list
         :type if_use: string
 
-        * Run setup.py egg_info so we can get the setuptools requirements
-          (dependencies)
-
-        * Add the unpacked directory to the WorkingEnvironment
-
-        * Get a Distribution object for package we are isntalling
-
-        * Get Requirement object containing dependencies
-
-          a) Determine if any of the requirements are installed
-
-          b) If requirements aren't installed, see if we have a matching ebuild
-          with adequate version available
-
-        * Build DEPEND string based on either a) or b)
-
         """
-        # TODO: enamer for determining category
+        # TODO: docs
         requirements = parse_requirements(vanilla_requirements)
 
         for req in requirements:
@@ -269,13 +273,17 @@ class Ebuild(dict):
             extras = req.extras
             category = Enamer.convert_category(req.project_name, self.metadata)
             pn = Enamer.parse_pn(req.project_name)[0] or req.project_name
-            log.debug('get_dependencies: pn(%s)' % pn)
+
             # add setuptools dependency for later dependency generating
             self.add_setuptools_depend(req)
+
+            log.debug('get_dependencies: pn(%s) category(%s)', pn, category)
+
             if not len(req.specs):
                 # No version of requirement was specified so we only add
                 # dev-python/pn
-                self.add_rdepend(Enamer.construct_atom(pn, category, uses=extras, if_use=if_use))
+                self.add_rdepend(Enamer.construct_atom(pn, category,
+                    uses=extras, if_use=if_use))
                 added_dep = True
             else:
                 comparator, ver = req.specs[0]
@@ -283,8 +291,8 @@ class Ebuild(dict):
                 log.debug('get_dependencies: pv(%s)' % ver)
                 if len(req.specs) > 1:
                     # Some packages have more than one comparator, i.e. cherrypy
-                    # for turbogears has cherrpy>=2.2,<3.0 which would translate to
-                    # portage's =dev-python/cherrypy-2.2*
+                    # for turbogears has cherrpy>=2.2,<3.0 which would translate
+                    # to portage's =dev-python/cherrypy-2.2*
                     comparator1, ver1 = req.specs[0]
                     comparator2, ver2 = req.specs[1]
                     if comparator1.startswith(">") and \
@@ -292,31 +300,41 @@ class Ebuild(dict):
                         comparator = "="
                         # TODO: more specific info about req
                         # TODO: use blockers
-                        self['warnings'].add("Couldn't resolve requirements. You will need to make sure the RDEPEND for %s is correct." % req)
+                        self['warnings'].add("Couldn't resolve requirements. "
+                            "You will need to make sure the RDEPEND for %s is"
+                            " correct." % req)
                     else:
                         # TODO: more specific info about req
-                        self['warnings'].add("Couldn't resolve requirements. You will need to make sure the RDEPEND for %s is correct." % req)
-                        self.add_rdepend(Enamer.construct_atom(pn, category, uses=extras, if_use=if_use))
+                        self['warnings'].add("Couldn't resolve requirements. "
+                            "You will need to make sure the RDEPEND for %s is "
+                            "correct." % req)
+                        self.add_rdepend(Enamer.construct_atom(pn, category,
+                            uses=extras, if_use=if_use))
                         break
                 # Requirement.specs is a list of (comparator,version) tuples
                 if comparator == "==":
                     comparator = "="
-                if PortageUtils.valid_cpn(Enamer.construct_atom(pn, category, ver, comparator, uses=extras)):
-                    self.add_rdepend(Enamer.construct_atom(pn, category, ver, comparator, uses=extras, if_use=if_use))
+                if PortageUtils.valid_cpn(Enamer.construct_atom(pn, category,
+                        ver, comparator, uses=extras)):
+                    self.add_rdepend(Enamer.construct_atom(pn, category, ver,
+                        comparator, uses=extras, if_use=if_use))
                 else:
-                    log.debug("Invalid PV in dependency: (Requirement %s) %s" % (req, temp_cpn))
+                    log.debug("Invalid PV in dependency: (Requirement %s) %s",
+                        req, temp_cpn)
                     installed_pv = PortageUtils.\
                         get_installed_ver(Enamer.\
                         construct_atom(pn, category, uses=extras, if_use=if_use))
                     if installed_pv:
                         # If we have it installed, use >= installed version
-                        self.add_rdepend(Enamer.construct_atom(pn, category, installed_pv, '>=', uses=extras, if_use=if_use))
+                        self.add_rdepend(Enamer.construct_atom(pn, category,
+                            installed_pv, '>=', uses=extras, if_use=if_use))
                     else:
                         # If package has invalid version and we don't have
                         # an ebuild in portage, just add PN to DEPEND, no
                         # version. This means the dep ebuild will have to
                         # be created by adding --MY_? options using the CLI
-                        self.add_rdepend(Enamer.construct_atom(pn, category, uses=extras, if_use=if_use))
+                        self.add_rdepend(Enamer.construct_atom(pn, category,
+                            uses=extras, if_use=if_use))
                 added_dep = True
             if not added_dep:
                 self['warnings'].add("Could not determine dependency: %s" % req)
@@ -370,7 +388,7 @@ class Ebuild(dict):
             self.get_dependencies(self.tests_require, 'test')
 
     def update_with_s(self):
-        """Add ${S} to ebuild if needed"""
+        """Add ${:term:`S`} to ebuild if needed."""
         log.debug("Trying to determine ${S}, unpacking...")
         unpacked_dir = find_s_dir(self['p'], self.options.category)
         if unpacked_dir == "":
@@ -399,6 +417,7 @@ class Ebuild(dict):
         self.post_unpack()
 
         env = Environment(loader=PackageLoader('gpypi2', 'templates'))
+        # TODO: convert 4 spaces to tabs
         return env.get_template(self.EBUILD_TEMPLATE).render(self)
 
     def print_formatted(self):
@@ -490,22 +509,22 @@ class Ebuild(dict):
         return True
 
     def show_warnings(self):
-        """Print warnings for incorrect ebuild syntax"""
+        """Log warnings for incorrect ebuild syntax."""
         for warning in self.warnings:
-            log.warn("** Warning: %s" % warning)
+            log.warn(warning)
 
     def add_use(self, use_flag):
-        """Add USE flag"""
+        """Add :term:`USE` flag."""
         self['use'].add(use_flag)
 
     def add_inherit(self, eclass):
-        """Add inherit eclass"""
+        """Add inherit :term:`eclass`."""
         self['inherit'].add(eclass)
 
     def add_depend(self, depend):
-        """Add DEPEND ebuild variable"""
+        """Add :term:`DEPEND` ebuild variable."""
         self['depend'].add(depend)
 
     def add_rdepend(self, rdepend):
-        """Add RDEPEND ebuild variable"""
+        """Add :term:`RDEPEND` ebuild variable."""
         self['rdepend'].add(rdepend)
