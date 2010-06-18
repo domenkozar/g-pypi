@@ -14,6 +14,8 @@
 :Author: Domen Kožar <domen@dev.si>
 :Source code: `Bitbucket.org source browser <http://bitbucket.org/iElectric/g-pypi2/src>`_
 :Bug tracker: `Bitbucket.org issues <http://bitbucket.org/iElectric/g-pypi2/issues?status=new&status=open>`_
+:Generated: |today|
+:License: Simplified BSD (2-clause)
 :Version: |release|
 
 
