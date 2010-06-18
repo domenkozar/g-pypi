@@ -17,14 +17,7 @@
 :Version: |release|
 
 
-.. topic:: Overview
-
-   :mod:`gpypi2` is Python library and command line tool for ...
-
-   :mod:`gpypi2` was started as part of `Google Summer of Code 2010 <http://code.google.com/soc>`_ by *Domen Kožar*, mentored by *Jesus Rivero*.
-
-
-.. topic:: Features
+.. sidebar:: Features
 
    * write ebuilds to overlay or stdout (formatted in ansi color, html and bbcode)
    * use :term:`MY_P`, :term:`MY_PN`, :term:`MY_PV` when needed using Bash substitutions
@@ -35,9 +28,15 @@
    * discovers :term:`DOCS` variable and/or `Sphinx documentation <http://sphinx.pocoo.org/>`_
    * discovers :mod:`nosetests` and `setup.py test`
 
-.. note::
-    :mod:`gpypi2` is not meant to be a developer replacment.
-    It's goal is to make developers life easier.
+.. topic:: Overview
+
+    :command:`gpypi2` is a command line tool for creating `Gentoo portage ebuilds <http://en.wikipedia.org/wiki/Ebuild>`_
+    from `Python Package Index <http://pypi.python.org/pypi>`_.
+
+    :command:`gpypi2` was started as part of `Google Summer of Code 2010 <http://code.google.com/soc>`_ by *Domen Kožar*, mentored by *Jesus Rivero*.
+
+    :command:`gpypi2` is not meant to be a Gentoo developer replacment.  On the contrary, it's goal is to make his/hers life easier.
+
 
 .. toctree::
     :maxdepth: 3
@@ -51,7 +50,7 @@
 Indices and tables
 ==================
 
+* :ref:`glossary`
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
-* :ref:`glossary`

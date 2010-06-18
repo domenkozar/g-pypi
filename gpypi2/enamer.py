@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 
 """
-Utility functions helping conversion of metadata from
-a python package to ebuild.
+Anything that needs to be converted from Python packaging
+syntax to Gentoo ebuild syntax belongs to this module.
 
 """
 
@@ -443,14 +443,10 @@ class Enamer(object):
         # Test for PV with -r1234 suffix
         # Portage uses -r suffixes for it's own ebuild revisions so
         # We have to convert it to _pre or _alpha etc.
-        try:
-            tail = up_pv.split("-")[-1][0]
-        except:
-            pass
-        else:
-            if tail == "r":
-                INVALID_VERSION = True
-                log.debug("We have a version with a -r### suffix")
+        tail = up_pv.split("-")[-1][0]
+        if tail == "r":
+            INVALID_VERSION = True
+            log.debug("We have a version with a -r### suffix")
 
         portage_atom = "=dev-python/%s-%s" % (up_pn, up_pv)
         if not PortageUtils.valid_cpn(portage_atom):

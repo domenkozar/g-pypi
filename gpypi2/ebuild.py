@@ -65,7 +65,7 @@ class Ebuild(dict):
     EXAMPLES_DIRS = ['example', 'examples', 'demo', 'demos']
     EBUILD_TEMPLATE = 'ebuild.jinja'
 
-    def __init__(self, up_pn, up_pv, download_url):
+    def __init__(self, up_pn, up_pv, download_url, options):
         self.pypi_pkg_name = up_pn
         self.metadata = None
         self.unpacked_dir = None
@@ -73,6 +73,7 @@ class Ebuild(dict):
         self.setup = []
         self.requires = set()
         self.has_tests = None
+        self.options = options
 
         # TODO: implement support for SCM download urls
         #if self.options.subversion:
@@ -137,11 +138,12 @@ class Ebuild(dict):
         if self['src_uri'].lower().endswith('.zip'):
             self.add_depend("app-arch/unzip")
 
-    def add_metadata(self):
+    def parse_metadata(self):
         """Extract :term:`DESCRIPTION`, :term:`HOMEPAGE`,
         :term:`LICENSE` ebuild variables from metadata.
 
         """
+        # TODO: move into enamer
         if 'homepage' in self.metadata:
             self['homepage'].add(self.metadata['homepage'])
 
@@ -158,7 +160,7 @@ class Ebuild(dict):
         if 'classifiers' in self.metadata:
             for data in self.metadata['classifiers']:
                 if data.startswith("License :: "):
-                    my_license = PortageUtils.get_portage_license(data)
+                    my_license = Enamer.convert_license(data)
         if not my_license:
             if 'license' in self.metadata:
                 my_license = self.metadata['license']
@@ -241,7 +243,6 @@ class Ebuild(dict):
         module_names.extend(keywords.get('packages', []))
         module_names.extend(keywords.get('py_modules', []))
         module_names.extend(filter(None, keywords.get('package_dir', []).keys()))
-        # TODO: extract $(S) from package_dir
         # TODO: support provides/requires keyword
         # http://docs.python.org/distutils/setupscript.html
         # #relationships-between-distributions-and-packages
@@ -265,7 +266,7 @@ class Ebuild(dict):
         :type if_use: string
 
         """
-        # TODO: docs
+        # TODO: DOC: steps to acquire deps
         requirements = parse_requirements(vanilla_requirements)
 
         for req in requirements:
@@ -359,6 +360,7 @@ class Ebuild(dict):
 
         """
         # TODO: add support for sphinx
+        # TODO: better handling of DOCS
 
         for ddir in self.DOC_DIRS:
             if os.path.exists(os.path.join(self.unpacked_dir, ddir)):
@@ -390,35 +392,39 @@ class Ebuild(dict):
     def update_with_s(self):
         """Add ${:term:`S`} to ebuild if needed."""
         log.debug("Trying to determine ${S}, unpacking...")
-        unpacked_dir = find_s_dir(self['p'], self.options.category)
-        if unpacked_dir == "":
-            self["s"] = "${WORKDIR}"
-            return
+        #unpacked_dir = PortageUtils.find_s_dir(self['p'], self.options.category)
+        #if unpacked_dir == "":
+            #self["s"] = "${WORKDIR}"
+            #return
 
-        self.unpacked_dir = os.path.join(get_workdir(self['p'],
-            self.options.category), unpacked_dir)
-        if unpacked_dir and unpacked_dir != self['p']:
-            if unpacked_dir == self['my_p_raw']:
-                unpacked_dir = '${MY_P}'
-            elif unpacked_dir == self['my_pn']:
-                unpacked_dir = '${MY_PN}'
-            elif unpacked_dir == self['pn']:
-                unpacked_dir = '${PN}'
+        #self.unpacked_dir = os.path.join(get_workdir(self['p'],
+            #self.options.category), unpacked_dir)
+        #if unpacked_dir and unpacked_dir != self['p']:
+            #if unpacked_dir == self['my_p_raw']:
+                #unpacked_dir = '${MY_P}'
+            #elif unpacked_dir == self['my_pn']:
+                #unpacked_dir = '${MY_PN}'
+            #elif unpacked_dir == self['pn']:
+                #unpacked_dir = '${PN}'
 
-            self["s"] = "${WORKDIR}/%s" % unpacked_dir
+            #self["s"] = "${WORKDIR}/%s" % unpacked_dir
+        if self.get('my_p', None):
+            self["s"] = "${WORKDIR}/${MY_P}"
+        else:
+            self["s"] = "${WORKDIR}/${P}"
+
 
     def render(self):
         """Generate ebuild from template"""
 
         # Add homepage, license and description from metadata
-        self.add_metadata()
-
-        #if not self.options.pretend and self.unpacked_dir: # and \
-        self.post_unpack()
+        self.parse_metadata()
 
         env = Environment(loader=PackageLoader('gpypi2', 'templates'))
+        self.output = env.get_template(self.EBUILD_TEMPLATE).render(self)
+        # TODO: custom templates support
         # TODO: convert 4 spaces to tabs
-        return env.get_template(self.EBUILD_TEMPLATE).render(self)
+        return self.output
 
     def print_formatted(self):
         """Print ebuild with logging"""
@@ -455,17 +461,15 @@ class Ebuild(dict):
         """Write ebuild and update it after unpacking and examining ${S}"""
         # Need to write the ebuild first so we can unpack it and check for $S
         if self.write(overwrite=self.options.overwrite):
-            unpack_ebuild(self.ebuild_path)
+            PortageUtils.unpack_ebuild(self.ebuild_path)
+            #if not self.options.pretend and self.unpacked_dir: # and \
+            self.post_unpack()
+
             self.update_with_s()
             # Write ebuild again after unpacking and adding ${S}
-            ebuild = self.render()
-            # Run any tests if found
-            #if self.has_tests:
-            #    run_tests(self.ebuild_path)
-            # We must overwrite initial skeleton ebuild
-            self.write(ebuild, overwrite=True)
-            self.print_formatted(ebuild)
+            self.write(overwrite=True)
             log.info("Your ebuild is here: " + self.ebuild_path)
+
         # If ebuild already exists, we don't unpack and get dependencies
         # because they must exist.
         # We should add an option to force creating dependencies or should
@@ -476,37 +480,43 @@ class Ebuild(dict):
         """Write ebuild file"""
         # Use command-line overlay if specified, else the one in .g-pyprc
         if self.options.overlay:
+            # TODO: validate overlay at the begining
             overlay_name = self.options.overlay
-            overlays = get_repo_names()
+            overlays = PortageUtils.get_repo_names()
             if overlay_name in overlay:
                 overlay_path = overlays[overlay_name]
             else:
-                log.error("Couldn't find overylay/repository by that" +
-                        " name. I know about these:")
+                log.error("Couldn't find overylay/repository by that "
+                        "name. I know about these:")
                 for repo in sorted(overlays.keys()):
                     log.error("  " + repo.ljust(18) + overlays[repo])
                 sys.exit(1)
         else:
-            overlay_path = self.config['overlay']
-        ebuild_dir = make_overlay_dir(self.options.category, self['pn'], \
+            # TODO: overlay_path = self.config.get('overlay', 'local')
+            overlay_path = '.'
+
+        # create path to ebuild
+        ebuild_dir = PortageUtils.make_overlay_dir(self.options.category, self['pn'],
                 overlay_path)
         if not ebuild_dir:
             log.error("Couldn't create overylay ebuild directory.")
-            sys.exit(2)
-        self.ebuild_path = os.path.join(ebuild_dir, "%s.ebuild" % \
-                self['p'])
+
+        # get ebuild path
+        self.ebuild_path = os.path.join(ebuild_dir, self['p'] + ".ebuild")
+        log.debug('Ebuild.write: build_path(%s)', self.ebuild_path)
+
+        # see if we want to overwrite
         if os.path.exists(self.ebuild_path) and not overwrite:
-            # log.error("Ebuild exists. Use -o to overwrite.")
-            log.warn("Ebuild exists, skipping: %s" % self.ebuild_path)
+            log.warn("Ebuild exists (use -o to overwrite), skipping: %s" % self.ebuild_path)
             return
+
+
+        # write ebuild
         try:
             out = open(self.ebuild_path, "w")
-        except IOError, err:
-            log.error(err)
-            sys.exit(2)
-        out.write(self.ebuild_text)
-        out.close()
-        return True
+            out.write(self.render())
+        finally:
+            out.close()
 
     def show_warnings(self):
         """Log warnings for incorrect ebuild syntax."""
@@ -528,3 +538,4 @@ class Ebuild(dict):
     def add_rdepend(self, rdepend):
         """Add :term:`RDEPEND` ebuild variable."""
         self['rdepend'].add(rdepend)
+    # TODO: get rid of add_*

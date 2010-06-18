@@ -14,7 +14,7 @@ class TestEbuild(BaseTestCase):
     """"""
 
     def setUp(self):
-        self.ebuild_args = ('foobar', '1.0', '')
+        self.ebuild_args = ('foobar', '1.0', '', {})
         self.ebuild = Ebuild(*self.ebuild_args)
 
     def test_get_dependencies_empty(self):

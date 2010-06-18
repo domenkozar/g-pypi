@@ -12,9 +12,9 @@ import os
 import commands
 import logging
 
+import portage
 from portage import config as portage_config
 from portage import settings as portage_settings
-
 try:
     # portage >= 2.2
     from portage import dep as portage_dep
@@ -26,9 +26,12 @@ except ImportError:
 sys.path.insert(0, "/usr/lib/gentoolkit/pym")
 import gentoolkit
 
+from gpypi2.exc import *
+
 
 log = logging.getLogger(__name__)
-ENV = portage_config(clone=portage_settings).environ()
+CONFIG = portage_config(clone=portage_settings)
+ENV = CONFIG.environ()
 
 class PortageUtils(object):
     """"""
@@ -104,23 +107,6 @@ class PortageUtils(object):
         else:
             return False
 
-    #def run_tests(ebuild_path):
-    #    """
-    #    Use portage to run tests
-
-    #    Some day I'll figure out how to get portage to do this directly. Some day.
-
-    #    @param ebuild_path: full path to ebuild
-    #    @type ebuild_path: string
-    #    @returns: None if succeed, raises OSError if fails to unpack
-
-    #    """
-    #    cmd = "/usr/bin/python /usr/bin/ebuild %s test" % ebuild_path
-    #    print cmd
-    #    (status, output) = commands.getstatusoutput(cmd)
-    #    print output
-    #    print status
-
     @classmethod
     def unpack_ebuild(cls, ebuild_path):
         """
@@ -130,20 +116,21 @@ class PortageUtils(object):
         :type ebuild_path: string
         :returns: None if succeed, raises OSError if fails to unpack
 
-        # TODO: Some day I'll figure out how to get portage to do this directly. Some day.
+        .. note::
+            We are running "ebuild %s digest setup clean unpack" in bash
+            subshell, since portage inner workings do not allow us to
+            use Python API.
+
         """
         (status, output) = commands.getstatusoutput("ebuild %s digest setup clean unpack" % ebuild_path)
         if status:
             # Portage's error message, sometimes.
             # Couldn't determine PN or PV so we misnamed ebuild
             if 'does not follow correct package syntax' in output:
-                log.error(output)
                 log.error("Misnamed ebuild: %s" % ebuild_path)
                 log.error("Try using -n or -v to force PN or PV")
                 os.unlink(ebuild_path)
-            else:
-                log.error(output)
-                raise OSError
+            raise GPyPiCouldNotUnpackEbuild(output)
 
     @classmethod
     def find_s_dir(cls, p, cat):
@@ -171,7 +158,7 @@ class PortageUtils(object):
             #Unpacked in cwd
             return ""
         else:
-            #XXX Need to search whole tree for setup.py
+            # TODO: Need to search whole tree for setup.py
             log.error("Can't determine ${S}")
             log.error("Unpacked multiple directories: %s" % dirs)
 
@@ -233,18 +220,7 @@ class PortageUtils(object):
             try:
                 os.makedirs(ebuild_dir)
             except OSError, err:
-                #XXX Use logger
+                # TODO: Use logger
                 log.error(err)
                 sys.exit(2)
         return ebuild_dir
-
-    @classmethod
-    def find_egg_info_dir(cls, root):
-        """
-        Locate all files matching supplied filename pattern in and below
-        supplied root directory.
-        """
-        for path, dirs, files in os.walk(os.path.abspath(root)):
-            for this_dir in dirs:
-                if this_dir.endswith(".egg-info"):
-                    return os.path.normpath(os.path.join(path, this_dir, ".."))

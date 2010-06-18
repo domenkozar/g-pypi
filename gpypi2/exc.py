@@ -18,3 +18,6 @@ class GPyPiNoSetupFile(GPyPiException):
 
 class GPyPiNoDistribution(GPyPiException):
     """Raised if unpacked directory could not be found."""
+
+class GPyPiCouldNotUnpackEbuild(GPyPiException):
+    """Raised if unpacking failed."""

@@ -2,6 +2,20 @@ Development
 ===========
 
 
+Workflow of creating an ebuild
+******************************
+
+    #. PyPi is queried for an package with coresponding version (if no version is given,
+       highest available is used)
+
+    #. PyPi metadata is collected, and :meth:`gpypi2.enamer.Enamer.get_vars` is used to collect
+       common ebuild variables
+
+    #. Initial ebuild is written to overlay with :term:`SRC_URI`
+
+    #. Ebuild in unpacked.
+
+
 How are :term:`PV`, :term:`PN`, :term:`MY_PV`, :term:`MY_PN` and :term:`SRC_URI` determined?
 **********************************************************************************************
 

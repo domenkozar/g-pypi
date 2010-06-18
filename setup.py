@@ -37,6 +37,7 @@ setup(name='g-pypi2',
         'jinja2',
         'yolk',
         'pygments',
+        'argparse',
     ],
     tests_require=[
         'nose',
@@ -45,5 +46,8 @@ setup(name='g-pypi2',
     ],
     extras_require={
         'docs': ["Sphinx", "sphinxcontrib-googleanalytics"],
+    },
+    entry_points={
+        'console_scripts': ['gpypi2 = gpypi2.cli:main']
     },
 )

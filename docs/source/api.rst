@@ -8,6 +8,13 @@ Python API
 
 .. automodule:: gpypi2
 
+:mod:`gpypi2.cli` -- Command line handling
+====================================================
+
+.. automodule:: gpypi2.cli
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
 :mod:`gpypi2.ebuild` -- Ebuild generation module
 =========================================================
@@ -77,6 +84,14 @@ Python API
 =====================================
 
 .. automodule:: gpypi2.tests.test_pypi
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+:mod:`gpypi2.tests.test_cli`
+=====================================
+
+.. automodule:: gpypi2.tests.test_cli
    :members:
    :undoc-members:
    :show-inheritance:
