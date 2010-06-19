@@ -20,15 +20,13 @@ Creates an ebuild
 
 import sys
 import os
-import imp
 import logging
 from datetime import date
 
 from jinja2 import Environment, PackageLoader
 from pygments import highlight
 from pygments.lexers import BashLexer
-from pygments.formatters import TerminalFormatter, HtmlFormatter
-from pygments.formatters import BBCodeFormatter
+from pygments.formatters import get_formatter_by_name
 from pkg_resources import parse_requirements
 import setuptools
 import distutils.core
@@ -37,6 +35,7 @@ from gpypi2 import __version__
 from gpypi2.portage_utils import PortageUtils
 from gpypi2.enamer import Enamer
 from gpypi2.exc import *
+from gpypi2 import utils
 #from g_pypi.config import MyConfig
 
 
@@ -148,7 +147,7 @@ class Ebuild(dict):
             self['homepage'].add(self.metadata['homepage'])
 
         # There doesn't seem to be any specification for case
-        elif 'summary' in self.metadata:
+        if 'summary' in self.metadata:
             self['description'] = self.metadata['summary']
         if self['description'] is None:
             self['description'] = ""
@@ -212,7 +211,7 @@ class Ebuild(dict):
                 raise GPyPiNoSetupFile("%s does not exists." % setup_file)
             else:
                 # run setup file
-                imp.load_source('setup', setup_file)
+                utils.import_path(setup_file)
         else:
             raise GPyPiNoDistribution("Unpacked dir could not be found: %s"\
                 % self.unpacked_dir)
@@ -227,7 +226,7 @@ class Ebuild(dict):
         self.get_dependencies(self.install_requires)
         self.get_dependencies(self.setup_requires)
         # TODO: handle setup as depend instead of rdepend
-        self.get_dependencies(self.extras_requires)
+        self.get_dependencies(self.extras_require)
         self.discover_docs_and_examples()
         self.discover_tests()
 
@@ -242,7 +241,7 @@ class Ebuild(dict):
         module_names = []
         module_names.extend(keywords.get('packages', []))
         module_names.extend(keywords.get('py_modules', []))
-        module_names.extend(filter(None, keywords.get('package_dir', []).keys()))
+        module_names.extend(filter(None, keywords.get('package_dir', {}).keys()))
         # TODO: support provides/requires keyword
         # http://docs.python.org/distutils/setupscript.html
         # #relationships-between-distributions-and-packages
@@ -315,7 +314,7 @@ class Ebuild(dict):
                 # Requirement.specs is a list of (comparator,version) tuples
                 if comparator == "==":
                     comparator = "="
-                if PortageUtils.valid_cpn(Enamer.construct_atom(pn, category,
+                if PortageUtils.is_valid_atom(Enamer.construct_atom(pn, category,
                         ver, comparator, uses=extras)):
                     self.add_rdepend(Enamer.construct_atom(pn, category, ver,
                         comparator, uses=extras, if_use=if_use))
@@ -392,26 +391,18 @@ class Ebuild(dict):
     def update_with_s(self):
         """Add ${:term:`S`} to ebuild if needed."""
         log.debug("Trying to determine ${S}, unpacking...")
-        #unpacked_dir = PortageUtils.find_s_dir(self['p'], self.options.category)
-        #if unpacked_dir == "":
-            #self["s"] = "${WORKDIR}"
-            #return
+        unpacked_dir = PortageUtils.find_s_dir(self['p'], self.options.category)
+        if unpacked_dir == "":
+            self["s"] = "${WORKDIR}"
+            return
 
-        #self.unpacked_dir = os.path.join(get_workdir(self['p'],
-            #self.options.category), unpacked_dir)
-        #if unpacked_dir and unpacked_dir != self['p']:
-            #if unpacked_dir == self['my_p_raw']:
-                #unpacked_dir = '${MY_P}'
-            #elif unpacked_dir == self['my_pn']:
-                #unpacked_dir = '${MY_PN}'
-            #elif unpacked_dir == self['pn']:
-                #unpacked_dir = '${PN}'
+        self.unpacked_dir = os.path.join(PortageUtils.get_workdir(self['p'],
+            self.options.category), unpacked_dir)
 
-            #self["s"] = "${WORKDIR}/%s" % unpacked_dir
         if self.get('my_p', None):
             self["s"] = "${WORKDIR}/${MY_P}"
         else:
-            self["s"] = "${WORKDIR}/${P}"
+            pass # ${WORKDIR}/${P}
 
 
     def render(self):
@@ -427,34 +418,24 @@ class Ebuild(dict):
         return self.output
 
     def print_formatted(self):
-        """Print ebuild with logging"""
-        # No command-line set, config file says no formatting
-        log.info("%s/%s-%s" % (self.options.category, self['pn'],
-            self['pv']))
-        if self.options.format == "none" or \
-            (self.config['format'] == "none" and not self.options.format):
-            log.info(self.ebuild_text)
+        """Print formatted ebuild
+        """
+        # TODO: category
+        # TODO: config for category, format and background
+        category = self.options.category
+        formatting = self.options.format
+        #background = self.config['background']
+
+        log.debug("Ebuild.print_formatted: ebuild %s",
+            Enamer.construct_atom(self['pn'], category, self['pv']))
+
+        if formatting == "none":
+            print self.ebuild_text
             return
 
         # use pygments to print ebuild
-        background = self.config['background']
-        if self.options.format == "html":
-            formatter = HtmlFormatter(full=True)
-        elif self.config['format'] == "bbcode" or \
-                self.options.format == "bbcode":
-            formatter = BBCodeFormatter()
-        elif self.options.format == "ansi" or self.config['format'] == "ansi":
-            formatter = TerminalFormatter(bg=background)
-        else:
-            #Invalid formatter specified
-            log.info(self.ebuild_text)
-            print "ERROR - No formatter"
-            print self.config['format'], self.options.format
-            return
-        log.info(highlight(self.ebuild_text,
-                BashLexer(),
-                formatter,
-        ))
+        formatter = get_formatter_by_name(formatting)
+        log.info(highlight(self.ebuild_text, BashLexer(), formatter))
         self.show_warnings()
 
     def create(self):
@@ -463,9 +444,9 @@ class Ebuild(dict):
         if self.write(overwrite=self.options.overwrite):
             PortageUtils.unpack_ebuild(self.ebuild_path)
             #if not self.options.pretend and self.unpacked_dir: # and \
+            self.update_with_s()
             self.post_unpack()
 
-            self.update_with_s()
             # Write ebuild again after unpacking and adding ${S}
             self.write(overwrite=True)
             log.info("Your ebuild is here: " + self.ebuild_path)
@@ -477,28 +458,18 @@ class Ebuild(dict):
         return self.requires
 
     def write(self, overwrite=False):
-        """Write ebuild file"""
+        """Write ebuild file
+        """
         # Use command-line overlay if specified, else the one in .g-pyprc
-        if self.options.overlay:
-            # TODO: validate overlay at the begining
-            overlay_name = self.options.overlay
-            overlays = PortageUtils.get_repo_names()
-            if overlay_name in overlay:
-                overlay_path = overlays[overlay_name]
-            else:
-                log.error("Couldn't find overylay/repository by that "
-                        "name. I know about these:")
-                for repo in sorted(overlays.keys()):
-                    log.error("  " + repo.ljust(18) + overlays[repo])
-                sys.exit(1)
-        else:
-            # TODO: overlay_path = self.config.get('overlay', 'local')
-            overlay_path = '.'
+        # TODO: change overlay default
+        overlay_name = self.options.overlay or 'local'
+        overlay_path = PortageUtils.get_overlay_path(overlay_name)
 
         # create path to ebuild
         ebuild_dir = PortageUtils.make_overlay_dir(self.options.category, self['pn'],
                 overlay_path)
         if not ebuild_dir:
+            # TODO: raise exception
             log.error("Couldn't create overylay ebuild directory.")
 
         # get ebuild path
@@ -508,8 +479,7 @@ class Ebuild(dict):
         # see if we want to overwrite
         if os.path.exists(self.ebuild_path) and not overwrite:
             log.warn("Ebuild exists (use -o to overwrite), skipping: %s" % self.ebuild_path)
-            return
-
+            return False
 
         # write ebuild
         try:
@@ -517,6 +487,7 @@ class Ebuild(dict):
             out.write(self.render())
         finally:
             out.close()
+        return True
 
     def show_warnings(self):
         """Log warnings for incorrect ebuild syntax."""

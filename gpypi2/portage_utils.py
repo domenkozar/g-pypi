@@ -33,11 +33,12 @@ log = logging.getLogger(__name__)
 CONFIG = portage_config(clone=portage_settings)
 ENV = CONFIG.environ()
 
+
 class PortageUtils(object):
     """"""
 
     @classmethod
-    def get_repo_names(cls):
+    def get_all_overlays(cls):
         """
         Return a dict of overlay names with their paths
         e.g.
@@ -55,8 +56,29 @@ class PortageUtils(object):
                 repo_name = open(repo_name_path, 'r').readline().strip()
                 treemap[repo_name] = path
             except (OSError, IOError):
-                log.warn("No repo_name in %s" % path)
+                log.warn("No 'profiles/repo_name' in %s" % path)
         return treemap
+
+    @classmethod
+    def get_overlay_path(cls, overlay_name):
+        """Return path mapped to overlay name.
+
+        :param overlay_name: Name of the overlay
+        :returns: Portage overlay path
+        :rtype: string
+        :raises: :exc:`gpypi2.exc.GPyPiOverlayDoesNotExist`
+
+        **Example:**
+        """
+        # TODO: example for local, main and third party overlay
+
+        overlays = cls.get_all_overlays()
+        if overlay_name in overlays:
+            overlay_path = overlays[overlay_name]
+        else:
+            raise GPyPiOverlayDoesNotExist('"%s". Available: %s' \
+                % (overlay_name, " ".join(overlays.keys())))
+        return overlay_path
 
     @classmethod
     def get_installed_ver(cls, cpn):
@@ -77,19 +99,23 @@ class PortageUtils(object):
             return
 
     @classmethod
-    def valid_cpn(cls, cpn):
+    def is_valid_atom(cls, atom):
         """
-        Return True if cpn is valid portage category/pn-pv
+        Return True if atom is valid portage =category/pn-pv.
 
-        :param cpn: cat/pkg-ver
-        :type cpn: string
+        :param atom: category/package-version
+        :type atom: string
         :returns: bool
 
+        **Example:**
+
+        >>> PortageUtils.is_valid_atom('=dev-python/foobar-1.0')
+        True
+        >>> PortageUtils.is_valid_atom('=foobar-1.0')
+        False
+
         """
-        if portage_dep.isvalidatom(cpn):
-            return True
-        else:
-            return False
+        return bool(portage_dep.isvalidatom(atom))
 
     @classmethod
     def ebuild_exists(cls, cat_pkg):
@@ -115,6 +141,7 @@ class PortageUtils(object):
         :param ebuild_path: full path to ebuild
         :type ebuild_path: string
         :returns: None if succeed, raises OSError if fails to unpack
+        :raises: :exc:`gpypi2.exc.GPyPiCouldNotUnpackEbuild`
 
         .. note::
             We are running "ebuild %s digest setup clean unpack" in bash
@@ -163,64 +190,77 @@ class PortageUtils(object):
             log.error("Unpacked multiple directories: %s" % dirs)
 
     @classmethod
-    def get_workdir(cls, p, cat):
+    def get_workdir(cls, p, category):
         """
         Return WORKDIR
 
         :param p: portage ${P}
-        :param cat: valid portage category
         :type p: string
-        :type cat: string
-        :return: string of portage_tmpdir/cp
+        :param category: valid portage category
+        :type category: string
+        :returns: string of portage_tmpdir/cp
+
+        **Example:**
+
+        >>> PortageUtils.get_workdir('foobar-1.0', 'dev-python')
+        u'/var/tmp/portage/dev-python/foobar-1.0/work'
 
         """
-        return '%s/portage/%s/%s/work' % (cls.get_portage_tmpdir(), cat, p)
-
-    @classmethod
-    def get_portdir_overlay(cls):
-        """Return PORTDIR_OVERLAY from /etc/make.conf"""
-        return ENV['PORTDIR_OVERLAY'].split(" ")[0]
-
-    @classmethod
-    def get_portage_tmpdir(cls):
-        """Return PORTAGE_TMPDIR from /etc/make.conf"""
-        return ENV["PORTAGE_TMPDIR"]
-
-    @classmethod
-    def get_portdir(cls):
-        """Return PORTDIR from /etc/make.conf"""
-        return ENV["PORTDIR"]
-
-    @classmethod
-    def get_keyword(cls):
-        """Return ARCH from portage environment or None"""
-        arch = ENV.get('ARCH', None)
-
-        if arch and not arch.startswith('~'):
-            arch = "~%s" % arch
-        return arch
+        return '%s/portage/%s/%s/work' % (cls.get_portage_tmpdir(), category, p)
 
     @classmethod
     def make_overlay_dir(cls, category, pn, overlay):
         """
-        Create directory(s) in overlay for ebuild
+        Create directory(s) in overlay for ebuild.
 
         :param category: valid portage category
         :type category: string
-        :param pn: portage ${PN}
+        :param pn: :term:`PN`
         :type pn: string
         :param overlay: portage overlay directory
         :type overlay: string
-        :return: string of full directory name
+        :returns: full directory name
+        :rtype: string
+        :raises: :exc:`gpypi2.exc.GPyPiCouldNotCreateEbuildPath`
+
+        **Example:**
 
         """
-
         ebuild_dir = os.path.join(overlay, category, pn)
         if not os.path.isdir(ebuild_dir):
             try:
                 os.makedirs(ebuild_dir)
             except OSError, err:
-                # TODO: Use logger
-                log.error(err)
-                sys.exit(2)
+                raise GPyPiCouldNotCreateEbuildPath(err)
         return ebuild_dir
+
+    @classmethod
+    def get_portdir_overlay(cls):
+        """Return PORTDIR_OVERLAY from /etc/make.conf
+
+        **Example:**
+
+        """
+        return ENV['PORTDIR_OVERLAY'].split(" ")[0]
+
+    @classmethod
+    def get_portage_tmpdir(cls):
+        """Return PORTAGE_TMPDIR from /etc/make.conf
+        """
+        return ENV["PORTAGE_TMPDIR"]
+
+    @classmethod
+    def get_portdir(cls):
+        """Return PORTDIR from /etc/make.conf
+        """
+        return ENV["PORTDIR"]
+
+    @classmethod
+    def get_keyword(cls):
+        """Return ARCH from portage environment or None
+        """
+        arch = ENV.get('ARCH', None)
+
+        if arch and not arch.startswith('~'):
+            arch = "~%s" % arch
+        return arch

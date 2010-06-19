@@ -449,7 +449,7 @@ class Enamer(object):
             log.debug("We have a version with a -r### suffix")
 
         portage_atom = "=dev-python/%s-%s" % (up_pn, up_pv)
-        if not PortageUtils.valid_cpn(portage_atom):
+        if not PortageUtils.is_valid_atom(portage_atom):
             INVALID_VERSION = True
             log.debug("%s is not valid portage atom", portage_atom)
 
@@ -482,7 +482,7 @@ class Enamer(object):
 
         # Make sure we have a valid P
         atom = "=dev-python/%s-%s" % (pn, pv)
-        if not PortageUtils.valid_cpn(atom):
+        if not PortageUtils.is_valid_atom(atom):
             log.error(locals())
             raise GPyPiInvalidAtom("%s is not a valid portage atom. "
                 "We could not determine it from upstream pn(%s) and pv(%s)." %

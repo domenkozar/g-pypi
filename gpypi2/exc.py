@@ -21,3 +21,12 @@ class GPyPiNoDistribution(GPyPiException):
 
 class GPyPiCouldNotUnpackEbuild(GPyPiException):
     """Raised if unpacking failed."""
+
+class GPyPiInvalidParameter(GPyPiException):
+    """Raised CLI parameter is not valid."""
+
+class GPyPiCouldNotCreateEbuildPath(GPyPiException):
+    """Raised when directory for an ebuild could not be created."""
+
+class GPyPiOverlayDoesNotExist(GPyPiException):
+    """"""

@@ -21,6 +21,7 @@ from yolk.setuptools_support import get_download_uri
 from gpypi2.ebuild import Ebuild
 from gpypi2.portage_utils import PortageUtils
 from gpypi2 import __version__
+from gpypi2.exc import *
 
 
 log = logging.getLogger(__name__)
@@ -70,7 +71,7 @@ class GPyPI(object):
                     # TODO: category
                     if self.options.no_deps or ebuild_exists("dev-python/%s" % req.project_name.lower()):
                         if not self.options.no_deps:
-                            log("Skipping dependency (exists): %s" % req.project_name)
+                            log.info("Skipping dependency (exists): %s" % req.project_name)
                     else:
                         self.add_dep(req.project_name)
             #Only force overwriting and category on first ebuild created, not dependencies
@@ -182,25 +183,24 @@ class GPyPI(object):
             download_url = self.options.uri
         else:
             download_url = self.get_uri()
-        try:
-            ebuild = Ebuild(self.package_name, self.version, download_url, self.options)
-            # TODO: convert exceptions to ours
-        except portage_exception.InvalidVersionString:
-            log.error("Can't determine PV, use -v to set it: %s-%s" % \
-                    (self.package_name, self.version))
-            return
-        except portage_exception.InvalidPackageName:
-            log.error("Can't determine PN, use -n to set it: %s-%s" % \
-                    (self.package_name, self.version))
-            return
+        #try:
+        ebuild = Ebuild(self.package_name, self.version, download_url, self.options)
+        # TODO: convert exceptions to ours
+        #except portage_exception.InvalidVersionString:
+            #log.error("Can't determine PV, use -v to set it: %s-%s" % \
+                    #(self.package_name, self.version))
+            #return
+        #except portage_exception.InvalidPackageName:
+            #log.error("Can't determine PN, use -n to set it: %s-%s" % \
+                    #(self.package_name, self.version))
+            #return
 
         ebuild.set_metadata(self.query_metadata())
 
         if self.options.pretend:
-            print
-            ebuild.print_formatted(text)
-            return
-        return ebuild.create()
+            ebuild.print_formatted()
+        else:
+            ebuild.create()
 
     def query_metadata(self):
         """
@@ -217,66 +217,37 @@ class GPyPI(object):
             return self.pypi.release_data(self.package_name, get_highest_version(vers))
 
 
-def parse_pkg_ver(package_spec):
-    """
-    Return tuple with package_name and version from CLI args
-
-    :param package_spec: pkg_resources package spec
-    :type package_spec: string
-
-    :returns: tupe with pkg_name and version
-
-    """
-
-    arg_str = ("").join(package_spec)
-    if "==" not in arg_str:
-        #No version specified
-        package_name = arg_str
-        version = None
-    else:
-        (package_name, version) = arg_str.split("==")
-        version = version.strip()
-        package_name = package_name.strip()
-    return (package_name, version)
-
-
 def main():
     """Parse command-line options and do it.
     Core function for gpypi2 command.
     """
-    parser = argparse.ArgumentParser(prog='gpypi2')
+    main_parser = argparse.ArgumentParser(prog='gpypi2')
 
+    parser = argparse.ArgumentParser(add_help=False)
     parser.add_argument("-P", "--PN", action='store', dest="pn",
         default=False, help="Specify PN to use when naming ebuild.")
-
     parser.add_argument("-V", "--PV", action='store', dest="pv",
         default=False, help="Specify PV to use when naming ebuild.")
-
     parser.add_argument("--MY_PV", action='store', dest="my_pv",
         default=False, help="Specify MY_PV")
-
     parser.add_argument("--MY_PN", action='store', dest="my_pn",
         default=False, help="Specify MY_PN")
-
     parser.add_argument("--MY_P", action='store', dest="my_p",
         default=False, help="Specify MY_P")
-
     parser.add_argument("-u", "--uri", action='store', dest="uri",
         default=False, help="Specify URI of package if PyPI doesn't have it.")
-
     parser.add_argument("-q", "--quiet", action='store_true',
         dest="quiet", default=False, help="Show less output.")
-
     parser.add_argument("-d", "--debug", action='store_true',
         dest="debug", default=False, help="Show debug information.")
-
     parser.add_argument('-v', '--version', action='version', version='%(prog)s ' + __version__)
 
     # subcommands
-    subparsers = parser.add_subparsers(title="commands", dest="command")
+    subparsers = main_parser.add_subparsers(title="commands", dest="command")
 
-    parser_create = subparsers.add_parser('create', help="Write ebuild to an overlay.")
-    parser_create.add_argument('package', nargs=1)
+    parser_create = subparsers.add_parser('create', help="Write  to an overlay.", parents=[parser])
+    parser_create.add_argument('package', action='store')
+    parser_create.add_argument('version', nargs='?', default=None)
     parser_create.add_argument("-l", "--overlay", action='store', dest='overlay',
         metavar='OVERLAY_NAME', default=None,
         help='Specify overy to use by name ($OVERLAY/profiles/repo_name)')
@@ -291,22 +262,24 @@ def main():
         dest="pretend", default=False, help="Print ebuild to stdout, "
         "don't write ebuild file, don't download SRC_URI.")
 
-    parser_echo = subparsers.add_parser('echo', help="Echo ebuild to stdout.")
-    parser_echo.add_argument('package', nargs=1)
+    parser_echo = subparsers.add_parser('echo', help="Echo ebuild to stdout.", parents=[parser])
+    parser_echo.add_argument('package', action='store')
+    parser_echo.add_argument('version', nargs='?', default=None)
     parser_echo.add_argument("--format", action='store', dest="format",
-        default=None, help="Format when printing to stdout: ansi, "
+        default=None, help="Format when printing to stdout: console, "
         "html, bbcode, or none")
 
-    args = parser.parse_args()
+    args = main_parser.parse_args()
 
     if args.debug and args.quiet:
-        parser.error('Can\'t use --debug and --quiet altogether.')
+        main_parser.error('Can\'t use --debug and --quiet altogether.')
 
-    # TODO: get from config.ini
+    # TODO: config
     logger = logging.getLogger()
     ch = logging.StreamHandler()
     ch.setFormatter(logging.Formatter("%(message)s"))
     logger.addHandler(ch)
+
     if args.debug:
         logger.setLevel(logging.DEBUG)
     elif args.quiet:
@@ -314,12 +287,10 @@ def main():
     else:
         logger.setLevel(logging.INFO)
 
-
     if os.geteuid() != 0:
-        parser.error('Must be run as root.')
+        main_parser.error('Must be run as root.')
 
-    (package_name, version) = parse_pkg_ver(args.package)
-    gpypi = GPyPI(package_name, version, args)
+    gpypi = GPyPI(args.package, args.version, args)
 
 if __name__ == "__main__":
     main()

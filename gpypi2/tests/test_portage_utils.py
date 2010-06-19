@@ -20,7 +20,7 @@ class TestPortageUtils(BaseTestCase):
         """"""
         pass
 
-    def test_valid_cpn(self):
+    def test_is_valid_atom(self):
         """"""
         pass
 
