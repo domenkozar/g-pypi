@@ -264,3 +264,5 @@ class PortageUtils(object):
         if arch and not arch.startswith('~'):
             arch = "~%s" % arch
         return arch
+
+#class EbuildLogging(logging.getLoggerClass()):

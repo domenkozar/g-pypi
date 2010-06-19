@@ -18,10 +18,11 @@ from yolk.pypi import CheeseShop
 from yolk.yolklib import get_highest_version
 from yolk.setuptools_support import get_download_uri
 
+from gpypi2 import __version__
 from gpypi2.ebuild import Ebuild
 from gpypi2.portage_utils import PortageUtils
-from gpypi2 import __version__
 from gpypi2.exc import *
+from gpypi2.utils import PortageFormatter, PortageStreamHandler
 
 
 log = logging.getLogger(__name__)
@@ -184,6 +185,7 @@ class GPyPI(object):
         else:
             download_url = self.get_uri()
         #try:
+        log.info('Generating ebuild: %s %s', self.package_name, self.version)
         ebuild = Ebuild(self.package_name, self.version, download_url, self.options)
         # TODO: convert exceptions to ours
         #except portage_exception.InvalidVersionString:
@@ -222,6 +224,8 @@ def main():
     Core function for gpypi2 command.
     """
     main_parser = argparse.ArgumentParser(prog='gpypi2')
+    main_parser.add_argument('-v', '--version', action='version',
+        version='%(prog)s ' + __version__)
 
     parser = argparse.ArgumentParser(add_help=False)
     parser.add_argument("-P", "--PN", action='store', dest="pn",
@@ -240,12 +244,13 @@ def main():
         dest="quiet", default=False, help="Show less output.")
     parser.add_argument("-d", "--debug", action='store_true',
         dest="debug", default=False, help="Show debug information.")
-    parser.add_argument('-v', '--version', action='version', version='%(prog)s ' + __version__)
+    parser.add_argument('--nocolors', action='store_true', dest='nocolors',
+        help="Disable colorful output", default=False)
 
     # subcommands
     subparsers = main_parser.add_subparsers(title="commands", dest="command")
 
-    parser_create = subparsers.add_parser('create', help="Write  to an overlay.", parents=[parser])
+    parser_create = subparsers.add_parser('create', help="Write ebuild to an overlay.", parents=[parser])
     parser_create.add_argument('package', action='store')
     parser_create.add_argument('version', nargs='?', default=None)
     parser_create.add_argument("-l", "--overlay", action='store', dest='overlay',
@@ -276,8 +281,12 @@ def main():
 
     # TODO: config
     logger = logging.getLogger()
-    ch = logging.StreamHandler()
-    ch.setFormatter(logging.Formatter("%(message)s"))
+    if args.nocolors:
+        ch = logging.StreamHandler()
+        ch.setFormatter(logging.Formatter("%(message)s"))
+    else:
+        ch = PortageStreamHandler()
+        ch.setFormatter(PortageFormatter("%(message)s"))
     logger.addHandler(ch)
 
     if args.debug:

@@ -29,6 +29,7 @@
    * determine :term:`S` by unpacking ebuild
    * discovers :term:`DOCS` variable and/or `Sphinx documentation <http://sphinx.pocoo.org/>`_
    * discovers :mod:`nosetests` and `setup.py test`
+   * generates ebuilds for dependencies
 
 .. topic:: Overview
 
