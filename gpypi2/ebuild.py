@@ -65,7 +65,6 @@ class Ebuild(dict):
     EBUILD_TEMPLATE = 'ebuild.jinja'
 
     def __init__(self, up_pn, up_pv, download_url, options):
-        self.pypi_pkg_name = up_pn
         self.metadata = None
         self.unpacked_dir = None
         self.ebuild_path = ""
@@ -85,6 +84,7 @@ class Ebuild(dict):
             'up_pn': up_pn,
             'up_pv': up_pv,
             'download_url': download_url,
+            'category': '',
             'need_python': '',
             'python_modname': '',
             'description': '',
@@ -121,6 +121,8 @@ class Ebuild(dict):
         else:
             # TODO: convert error
             log.error("Package has no metadata.")
+
+        self['category'] = Enamer.convert_category(self['up_pn'], self.metadata)
 
     def set_ebuild_vars(self, download_url):
         """Calls :meth:`gpypi2.enamer.Enamer.get_vars` and
@@ -271,7 +273,8 @@ class Ebuild(dict):
         for req in requirements:
             added_dep = False
             extras = req.extras
-            category = Enamer.convert_category(req.project_name, self.metadata)
+            category = Enamer.convert_category(req.project_name, {})
+            # TODO: pass metadata from the project_name
             pn = Enamer.parse_pn(req.project_name)[0] or req.project_name
 
             # add setuptools dependency for later dependency generating
@@ -391,13 +394,13 @@ class Ebuild(dict):
     def update_with_s(self):
         """Add ${:term:`S`} to ebuild if needed."""
         log.debug("Trying to determine ${S}, unpacking...")
-        unpacked_dir = PortageUtils.find_s_dir(self['p'], self.options.category)
+        unpacked_dir = PortageUtils.find_s_dir(self['p'], self['category'])
         if unpacked_dir == "":
             self["s"] = "${WORKDIR}"
             return
 
         self.unpacked_dir = os.path.join(PortageUtils.get_workdir(self['p'],
-            self.options.category), unpacked_dir)
+            self['category']), unpacked_dir)
 
         if self.get('my_p', None):
             self["s"] = "${WORKDIR}/${MY_P}"
@@ -420,14 +423,12 @@ class Ebuild(dict):
     def print_formatted(self):
         """Print formatted ebuild
         """
-        # TODO: category
         # TODO: config for category, format and background
-        category = self.options.category
         formatting = self.options.format
         #background = self.config['background']
 
         log.debug("Ebuild.print_formatted: ebuild %s",
-            Enamer.construct_atom(self['pn'], category, self['pv']))
+            Enamer.construct_atom(self['pn'], self['category'], self['pv']))
 
         if formatting == "none":
             print self.ebuild_text
@@ -466,7 +467,7 @@ class Ebuild(dict):
         overlay_path = PortageUtils.get_overlay_path(overlay_name)
 
         # create path to ebuild
-        ebuild_dir = PortageUtils.make_overlay_dir(self.options.category, self['pn'],
+        ebuild_dir = PortageUtils.make_overlay_dir(self['category'], self['pn'],
                 overlay_path)
         if not ebuild_dir:
             # TODO: raise exception

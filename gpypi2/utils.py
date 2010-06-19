@@ -70,7 +70,7 @@ class PortageFormatter(logging.Formatter):
 
         class LoggingOutput(EOutput):
             """"""
-            self.output = None
+            output = None
             def _write(self, file, msg):
                 self.output = msg
 
@@ -81,5 +81,7 @@ class PortageFormatter(logging.Formatter):
             l.einfo(output)
         elif record.levelno == logging.ERROR:
             l.eerror(output)
+        else:
+            output = output + '\n'
 
         return l.output or output

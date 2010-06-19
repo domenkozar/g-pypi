@@ -8,6 +8,7 @@ Command-line code for :mod:`gpypi2`
 
 import os
 import sys
+import pdb
 import inspect
 import logging
 
@@ -69,10 +70,8 @@ class GPyPI(object):
             requires = self.do_ebuild()
             if requires:
                 for req in requires:
-                    # TODO: category
-                    if self.options.no_deps or ebuild_exists("dev-python/%s" % req.project_name.lower()):
-                        if not self.options.no_deps:
-                            log.info("Skipping dependency (exists): %s" % req.project_name)
+                    if self.options.no_deps:
+                        pass
                     else:
                         self.add_dep(req.project_name)
             #Only force overwriting and category on first ebuild created, not dependencies
@@ -203,6 +202,7 @@ class GPyPI(object):
             ebuild.print_formatted()
         else:
             ebuild.create()
+        return ebuild.requires
 
     def query_metadata(self):
         """
@@ -299,7 +299,14 @@ def main():
     if os.geteuid() != 0:
         main_parser.error('Must be run as root.')
 
-    gpypi = GPyPI(args.package, args.version, args)
+    try:
+        gpypi = GPyPI(args.package, args.version, args)
+    except:
+        # enter pdb debugger when debugging is enabled
+        if args.debug:
+            pdb.post_mortem()
+        else:
+            raise
 
 if __name__ == "__main__":
     main()
