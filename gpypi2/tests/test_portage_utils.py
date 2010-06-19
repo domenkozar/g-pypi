@@ -2,15 +2,22 @@
 # -*- coding: utf-8 -*-
 
 import os
+import tempfile
+import shutil
 
 from gpypi2.portage_utils import *
 from gpypi2.tests import *
+from gpypi2.exc import *
 
 import mocker
 
 
 class TestPortageUtils(BaseTestCase):
     """Unittests for portage functions"""
+
+    def setUp(self):
+        self.overlay = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.overlay)
 
     def test_repo_names(self):
         """docstring for test_repo_names"""
@@ -26,7 +33,8 @@ class TestPortageUtils(BaseTestCase):
 
     def test_ebuild_exists(self):
         """docstring for test_ebuild_exists"""
-        pass
+        self.assertTrue(PortageUtils.ebuild_exists('sys-devel/gcc'))
+        self.assertFalse(PortageUtils.ebuild_exists('sys-devel/foobar'))
 
     def test_unpack_ebuild(self):
         """"""
@@ -56,9 +64,11 @@ class TestPortageUtils(BaseTestCase):
         """docstring for test_get_keyword"""
         pass
 
-    def test_make_overlay_dir(self):
-        """docstring for test_make_overlay_dir"""
-        pass
+    def test_make_ebuild_dir(self):
+        """docstring for test_make_ebuild_dir"""
+        ebuild_dir = PortageUtils.make_ebuild_dir('dev-python', 'foobar', self.overlay)
+        self.assertTrue(os.path.exists(ebuild_dir))
+        self.assertEqual(ebuild_dir.split('/')[-2:], ['dev-python', 'foobar'])
 
-    def test_find_egg_info_dir(self):
-        pass
+        with self.assertRaises(GPyPiCouldNotCreateEbuildPath):
+            PortageUtils.make_ebuild_dir('dev-python', 'foobar', '/dev/null')

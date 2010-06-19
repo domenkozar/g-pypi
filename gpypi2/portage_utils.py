@@ -122,9 +122,14 @@ class PortageUtils(object):
         """
         Checks if an ebuild exists in portage tree or overlay
 
-        :param cat_pkg: portage category/packagename
+        :param cat_pkg: category/package_name
         :type cat_pkg: string
         :returns: bool
+
+        **Example:**
+
+        >>> PortageUtils.ebuild_exists('sys-devel/gcc')
+        True
 
         """
         pkgs = gentoolkit.find_packages(cat_pkg)
@@ -209,7 +214,7 @@ class PortageUtils(object):
         return '%s/portage/%s/%s/work' % (cls.get_portage_tmpdir(), category, p)
 
     @classmethod
-    def make_overlay_dir(cls, category, pn, overlay):
+    def make_ebuild_dir(cls, category, pn, overlay):
         """
         Create directory(s) in overlay for ebuild.
 
@@ -264,5 +269,3 @@ class PortageUtils(object):
         if arch and not arch.startswith('~'):
             arch = "~%s" % arch
         return arch
-
-#class EbuildLogging(logging.getLoggerClass()):

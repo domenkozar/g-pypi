@@ -10,6 +10,7 @@ import logging
 
 from portage.output import EOutput
 
+
 def import_path(fullpath):
     """Import a file with full path specification. Allows one to
     import from anywhere, something __import__ does not do.
@@ -66,7 +67,6 @@ class PortageFormatter(logging.Formatter):
     def format(self, record):
         """format according to logging level"""
         output = logging.Formatter(self._fmt, self.datefmt).format(record)
-        # TODO: nocolors
 
         class LoggingOutput(EOutput):
             """"""

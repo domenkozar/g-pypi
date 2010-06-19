@@ -119,8 +119,7 @@ class Ebuild(dict):
                 new_key = key.lower().replace('-', '').replace('_', '')
                 self.metadata[new_key] = value
         else:
-            # TODO: convert error
-            log.error("Package has no metadata.")
+            log.error("No metadata.")
 
         self['category'] = Enamer.convert_category(self['up_pn'], self.metadata)
 
@@ -136,7 +135,7 @@ class Ebuild(dict):
         d = Enamer.get_vars(download_url, self['up_pn'], self['up_pv'])
         self.update(d)
 
-        if self['src_uri'].lower().endswith('.zip'):
+        if filter(None, [src_uri.lower().endswith('.zip') for src_uri in self['src_uri']]):
             self.add_depend("app-arch/unzip")
 
     def parse_metadata(self):
@@ -298,22 +297,27 @@ class Ebuild(dict):
                     # to portage's =dev-python/cherrypy-2.2*
                     comparator1, ver1 = req.specs[0]
                     comparator2, ver2 = req.specs[1]
+                    # TODO: this is a total mess, refactor
                     if comparator1.startswith(">") and \
                             comparator2.startswith("<"):
-                        comparator = "="
-                        # TODO: more specific info about req
-                        # TODO: use blockers
-                        self['warnings'].add("Couldn't resolve requirements. "
-                            "You will need to make sure the RDEPEND for %s is"
-                            " correct." % req)
+                        # we set blocker for <*
+                        self.add_rdepend(Enamer.construct_atom(pn, category, ver1,
+                            comparator1, uses=extras, if_use=if_use))
+                        self.add_rdepend(Enamer.construct_atom(pn, category, ver2,
+                            "!" + comparator2, uses=extras, if_use=if_use))
+                    elif comparator2.startswith(">") and \
+                            comparator1.startswith("<"):
+                        self.add_rdepend(Enamer.construct_atom(pn, category, ver2,
+                            comparator2, uses=extras, if_use=if_use))
+                        self.add_rdepend(Enamer.construct_atom(pn, category, ver1,
+                            "!" + comparator1, uses=extras, if_use=if_use))
                     else:
-                        # TODO: more specific info about req
                         self['warnings'].add("Couldn't resolve requirements. "
                             "You will need to make sure the RDEPEND for %s is "
                             "correct." % req)
                         self.add_rdepend(Enamer.construct_atom(pn, category,
                             uses=extras, if_use=if_use))
-                        break
+                    break
                 # Requirement.specs is a list of (comparator,version) tuples
                 if comparator == "==":
                     comparator = "="
@@ -467,7 +471,7 @@ class Ebuild(dict):
         overlay_path = PortageUtils.get_overlay_path(overlay_name)
 
         # create path to ebuild
-        ebuild_dir = PortageUtils.make_overlay_dir(self['category'], self['pn'],
+        ebuild_dir = PortageUtils.make_ebuild_dir(self['category'], self['pn'],
                 overlay_path)
         if not ebuild_dir:
             # TODO: raise exception

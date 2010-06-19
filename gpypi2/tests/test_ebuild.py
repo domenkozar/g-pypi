@@ -54,7 +54,18 @@ class TestEbuild(BaseTestCase):
         self.ebuild.get_dependencies('foobar==0.1', 'test')
         self.assertIn('test? =dev-python/foobar-0.1', self.ebuild['rdepend'])
 
+    def test_get_dependencies_double_less_more(self):
+        self.ebuild.get_dependencies('foobar>=0.1,<0.2')
+        self.assertIn('>=dev-python/foobar-0.1', self.ebuild['rdepend'])
+        self.assertIn('!<dev-python/foobar-0.2', self.ebuild['rdepend'])
+
+    def test_get_dependencies_double_less_more(self):
+        self.ebuild.get_dependencies('foobar<=0.1,>0.2')
+        self.assertIn('>dev-python/foobar-0.2', self.ebuild['rdepend'])
+        self.assertIn('!<=dev-python/foobar-0.1', self.ebuild['rdepend'])
+
         # TODO: tests for double operators (with extras and if_uses)
+        # TODO: invalid dependency
 
     def test_repr(self):
         self.assertIn('<Ebuild', self.ebuild.__repr__())
@@ -75,3 +86,23 @@ class TestEbuild(BaseTestCase):
         self.ebuild.add_rdepend('foo')
         self.assertIn('foo', self.ebuild['rdepend'])
 
+    def test_set_metadata_empty(self):
+        self.ebuild.set_metadata({})
+        self.assertEqual(self.ebuild.metadata, {})
+        self.assertEqual(self.ebuild['category'], 'dev-python')
+
+    def test_set_metadata(self):
+        self.ebuild.set_metadata({'Home-Page': 'foobar', 'License_': 'bar'})
+        self.assertEqual(self.ebuild.metadata, {'homepage': 'foobar', 'license': 'bar'})
+        self.assertEqual(self.ebuild['category'], 'dev-python')
+
+    @unittest2.expectedFailure
+    def test_set_ebuild_vars(self):
+        ebuild = Ebuild('foobar', '1.0', ['http://blabla.zip'], {})
+        self.assertIn('app-arch/unzip', self.ebuild['depend'])
+
+    def test_parse_metadata(self):
+        self.ebuild.set_metadata({'Home-Page': 'foobar', 'License_': 'GPL'})
+        self.ebuild.parse_metadata()
+        self.assertIn('foobar', self.ebuild['homepage'])
+        self.assertEqual(self.ebuild['license'], 'GPL-2')
