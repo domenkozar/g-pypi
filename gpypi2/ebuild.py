@@ -211,8 +211,13 @@ class Ebuild(dict):
             if not os.path.exists(setup_file):
                 raise GPyPiNoSetupFile("%s does not exists." % setup_file)
             else:
-                # run setup file
-                utils.import_path(setup_file)
+                # run setup file from unpacked_dir
+                cwd = os.getcwdu()
+                try:
+                    os.chdir(self.unpacked_dir)
+                    utils.import_path(setup_file)
+                finally:
+                    os.chdir(cwd)
         else:
             raise GPyPiNoDistribution("Unpacked dir could not be found: %s"\
                 % self.unpacked_dir)
@@ -220,14 +225,16 @@ class Ebuild(dict):
         # extract dependencies
         self.install_requires = keywords.get('install_requires', '')
         self.setup_requires = keywords.get('setup_requires', '')
-        self.extras_require = keywords.get('extras_require', '')
+        self.extras_require = keywords.get('extras_require', {})
         self.tests_require = keywords.get('tests_require', '')
 
         # dependencies resolving
         self.get_dependencies(self.install_requires)
         self.get_dependencies(self.setup_requires)
         # TODO: handle setup as depend instead of rdepend
-        self.get_dependencies(self.extras_require)
+        for use_flag, dependency in self.extras_require.iteritems():
+            self.get_dependencies(dependency, if_use=use_flag)
+
         self.discover_docs_and_examples()
         self.discover_tests()
 

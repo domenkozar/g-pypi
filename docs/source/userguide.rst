@@ -3,10 +3,10 @@
 User Guide
 ##########
 
-Installing
-**********
+Installation
+**************
 
-Through portage
+Stable version
 ----------------
 
 The most recommended way of installing :command:`gpypi2` is through portage.
@@ -15,10 +15,6 @@ Portage will handle all of dependencies and make sure you install stable version
 ::
     
     # sudo emerge -av gpypi2
-
-
-:command:`easy_install` / :command:`pip`
-----------------------------------------------
 
 Download and install directly through :term:`PyPi`::
 
@@ -33,6 +29,10 @@ Development version
 ---------------------------
 
 ::
+
+    $ sudo pip install http://bitbucket.org/iElectric/g-pypi2/get/tip.zip
+
+or::
 
     $ sudo easy_install http://bitbucket.org/iElectric/g-pypi2/get/tip.zip
 

@@ -56,7 +56,7 @@ class PortageUtils(object):
                 repo_name = open(repo_name_path, 'r').readline().strip()
                 treemap[repo_name] = path
             except (OSError, IOError):
-                log.warn("No 'profiles/repo_name' in %s" % path)
+                log.warn("No '%s', skipping" % os.path.join(path, 'profiles/repo_name'))
         return treemap
 
     @classmethod
@@ -238,15 +238,6 @@ class PortageUtils(object):
             except OSError, err:
                 raise GPyPiCouldNotCreateEbuildPath(err)
         return ebuild_dir
-
-    @classmethod
-    def get_portdir_overlay(cls):
-        """Return PORTDIR_OVERLAY from /etc/make.conf
-
-        **Example:**
-
-        """
-        return ENV['PORTDIR_OVERLAY'].split(" ")[0]
 
     @classmethod
     def get_portage_tmpdir(cls):

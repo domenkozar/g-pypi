@@ -74,7 +74,7 @@ class GPyPI(object):
                         pass
                     else:
                         self.add_dep(req.project_name)
-            #Only force overwriting and category on first ebuild created, not dependencies
+            # TODO: Only force overwriting and category on first ebuild created, not dependencies
             self.options.overwrite = False
             self.options.category = None
 
@@ -86,6 +86,7 @@ class GPyPI(object):
                 pkgs.append(deps[0])
 
         if project_name not in pkgs:
+            # TODO: resolve version and use it
             self.tree.append((project_name, None))
             log.info("Dependency needed: %s" % project_name)
 

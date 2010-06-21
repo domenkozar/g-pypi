@@ -18,10 +18,16 @@ class TestPortageUtils(BaseTestCase):
     def setUp(self):
         self.overlay = tempfile.mkdtemp()
         self.addCleanup(shutil.rmtree, self.overlay)
+        self.mocker = mocker.Mocker()
 
-    def test_repo_names(self):
-        """docstring for test_repo_names"""
-        pass
+    def test_get_all_overlays(self):
+        """docstring for test_get_all_overlays"""
+        #env = self.mocker.patch(ENV)
+        #env['PORTDIR_OVERLAY']
+        #self.mocker.result(self.overlay)
+        #self.mocker.replay()
+        d = PortageUtils.get_all_overlays()
+        # TODO: mock overlays locations
 
     def test_installed_ver(self):
         """"""
