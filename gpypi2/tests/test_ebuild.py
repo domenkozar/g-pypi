@@ -5,17 +5,41 @@
 """
 
 import unittest2
+import tempfile
+import shutil
 
+from argparse import Namespace
+
+from gpypi2 import portage_utils
 from gpypi2.ebuild import *
 from gpypi2.tests import *
+from gpypi2.exc import *
 
 
 class TestEbuild(BaseTestCase):
     """"""
+    SETUP_SAMPLES_DIR = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), 'setup_samples')
 
     def setUp(self):
-        self.ebuild_args = ('foobar', '1.0', '', {})
+        # unpacked dir
+        self.s = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.s)
+
+        # overlay
+        self.overlay_dir = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.overlay_dir)
+        profiles = os.path.join(self.overlay_dir, 'profiles')
+        os.mkdir(profiles)
+        open(os.path.join(profiles, 'repo_name'), 'w').write('gpypi-tests')
+
+        # monkey patch portage environment
+        portage_utils.ENV['PORTDIR_OVERLAY'] += ' %s' % self.overlay_dir
+
+        options = Namespace(overwrite=False, overlay='gpypi-tests')
+        self.ebuild_args = ('foobar', '1.0', '', options)
         self.ebuild = Ebuild(*self.ebuild_args)
+        self.ebuild.unpacked_dir = self.s
 
     def test_get_dependencies_empty(self):
         self.ebuild.get_dependencies('')
@@ -64,8 +88,20 @@ class TestEbuild(BaseTestCase):
         self.assertIn('>dev-python/foobar-0.2', self.ebuild['rdepend'])
         self.assertIn('!<=dev-python/foobar-0.1', self.ebuild['rdepend'])
 
-        # TODO: tests for double operators (with extras and if_uses)
-        # TODO: invalid dependency
+    def test_get_dependencies_double_more_less(self):
+        self.ebuild.get_dependencies('foobar>=0.1,<0.2')
+        self.assertIn('>=dev-python/foobar-0.1', self.ebuild['rdepend'])
+        self.assertIn('!<dev-python/foobar-0.2', self.ebuild['rdepend'])
+
+    def test_get_dependencies_double_invalid(self):
+        self.ebuild.get_dependencies('foobar>=0.1,>0.2')
+        self.assertIn('dev-python/foobar', self.ebuild['rdepend'])
+        # TODO: test for warning
+
+    def test_get_dependencies_invalid(self):
+        self.ebuild.get_dependencies('foobar!=0.2')
+        self.assertIn('dev-python/foobar', self.ebuild['rdepend'])
+        # TODO: test for warning
 
     def test_repr(self):
         self.assertIn('<Ebuild', self.ebuild.__repr__())
@@ -102,7 +138,72 @@ class TestEbuild(BaseTestCase):
         self.assertIn('app-arch/unzip', self.ebuild['depend'])
 
     def test_parse_metadata(self):
-        self.ebuild.set_metadata({'Home-Page': 'foobar', 'License_': 'GPL'})
+        self.ebuild.set_metadata({
+            'Home-Page': 'foobar',
+            'License_': 'GPL',
+            'summary': 'bar',
+        })
         self.ebuild.parse_metadata()
         self.assertIn('foobar', self.ebuild['homepage'])
         self.assertEqual(self.ebuild['license'], 'GPL-2')
+        self.assertEqual(self.ebuild['description'], 'bar')
+
+    def test_discover_docs(self):
+        docs_dir = os.path.join(self.s, 'docs')
+        os.mkdir(docs_dir)
+
+        self.ebuild.discover_docs_and_examples()
+        self.assertIn('doc', self.ebuild['use'])
+        self.assertEqual('docs', self.ebuild['docs_dir'])
+
+    @unittest2.expectedFailure
+    def test_discover_sphinx_docs(self):
+        self.fail('#')
+        # TODO: add support
+
+    def test_discover_examples(self):
+        examples_dir = os.path.join(self.s, 'examples')
+        os.mkdir(examples_dir)
+
+        self.ebuild.discover_docs_and_examples()
+        self.assertIn('examples', self.ebuild['use'])
+        self.assertEqual('examples', self.ebuild['examples_dir'])
+
+    def test_discover_nose_tests(self):
+        self.ebuild.tests_require = {}
+        self.ebuild.setup_keywords['test_suite'] = 'nose.collector'
+
+        self.ebuild.discover_tests()
+        self.assertEqual('nosetests', self.ebuild['tests_method'])
+
+    # TODO: assert tests dependencies
+
+    def test_discover_normal_tests(self):
+        self.ebuild.tests_require = {}
+        tests_dir = os.path.join(self.s, 'tests')
+        os.mkdir(tests_dir)
+
+        self.ebuild.discover_tests()
+        self.assertEqual('setup.py', self.ebuild['tests_method'])
+
+    ## post_unpack tests
+
+    def test_post_unpack_no_setup_file(self):
+        with self.assertRaises(GPyPiNoSetupFile):
+            self.ebuild.post_unpack()
+
+    def test_post_unpack_no_unpacked_dir(self):
+        self.ebuild.unpacked_dir = '/dev/null/foobar'
+        with self.assertRaises(GPyPiNoDistribution):
+            self.ebuild.post_unpack()
+
+    def test_post_unpack_most_simple_setup(self):
+        setup_file = os.path.join(self.SETUP_SAMPLES_DIR, 'most_simple_setup.tmpl')
+        shutil.copy(setup_file, os.path.join(self.s, 'setup.py'))
+        self.ebuild.post_unpack()
+
+        self.assertSetEqual(set(), self.ebuild['warnings'])
+        self.assertFalse(self.ebuild['python_modname'])
+        self.assertEqual(set(['dev-python/setuptools']), self.ebuild['rdepend'])
+        self.assertEqual(set(['dev-python/setuptools']), self.ebuild['depend'])
+        self.assertEqual(set(), self.ebuild['use'])

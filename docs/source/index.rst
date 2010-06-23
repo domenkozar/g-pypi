@@ -28,8 +28,11 @@
    * determine :term:`PYTHON_MODNAME` from :mod:`setuptools`: `packages`, `py_modules` and `package_dir`
    * determine :term:`S` by unpacking ebuild
    * discovers :term:`DOCS` variable and/or `Sphinx documentation <http://sphinx.pocoo.org/>`_
+   * discovers examples
    * discovers :mod:`nosetests` and `setup.py test`
    * generates ebuilds for dependencies
+   * uses Portage-alike colorful output
+
 
 .. topic:: Overview
 

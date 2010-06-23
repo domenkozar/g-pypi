@@ -21,6 +21,7 @@ Creates an ebuild
 import sys
 import os
 import logging
+from pprint import pformat
 from datetime import date
 
 from jinja2 import Environment, PackageLoader
@@ -60,15 +61,17 @@ class Ebuild(dict):
     :attr:`EBUILD_TEMPLATE` -- Template name
 
     """
+    # TODO: __init__ attrs
     DOC_DIRS = ['doc', 'docs', 'documentation']
     EXAMPLES_DIRS = ['example', 'examples', 'demo', 'demos']
     EBUILD_TEMPLATE = 'ebuild.jinja'
 
     def __init__(self, up_pn, up_pv, download_url, options):
         self.metadata = None
+        self.setup_keywords = {}
+        self.metadata = {}
         self.unpacked_dir = None
         self.ebuild_path = ""
-        self.setup = []
         self.requires = set()
         self.has_tests = None
         self.options = options
@@ -105,7 +108,7 @@ class Ebuild(dict):
         self.set_ebuild_vars(download_url)
 
     def __repr__(self):
-        return '<Ebuild (%s)>' % super(Ebuild, self).__repr__()
+        return '<Ebuild (%s)>' % pformat(dict(self))
 
     def set_metadata(self, metadata):
         """Set metadata.
@@ -113,7 +116,6 @@ class Ebuild(dict):
         :param metadata: Meta information about ebuild
         :type metadata: dict
         """
-        self.metadata = {}
         if metadata:
             for key, value in metadata.iteritems():
                 new_key = key.lower().replace('-', '').replace('_', '')
@@ -149,10 +151,7 @@ class Ebuild(dict):
 
         # There doesn't seem to be any specification for case
         if 'summary' in self.metadata:
-            self['description'] = self.metadata['summary']
-        if self['description'] is None:
-            self['description'] = ""
-        else:
+            self['description'] = self.metadata.get('summary', "")
             # Replace double quotes to keep bash syntax correct
             self['description'] = self['description'].replace('"', "'")
 
@@ -164,7 +163,6 @@ class Ebuild(dict):
         if not my_license:
             if 'license' in self.metadata:
                 my_license = self.metadata['license']
-            my_license = "%s" % my_license
         if not Enamer.is_valid_portage_license(my_license):
             if "LGPL" in my_license:
                 my_license = "LGPL-2.1"
@@ -173,10 +171,11 @@ class Ebuild(dict):
             else:
                 self['warnings'].add("Invalid LICENSE.")
 
-        self['license'] = "%s" % my_license
+        self['license'] = my_license
 
     def post_unpack(self):
-        """Perform finalization tasks:
+        """Perform finalization tasks. Dynamically imports *setup.py*
+        file and extracts it's kwargs.
 
             * determine if :term:`PYTHON_MODNAME` is not
               :term:`PN` -- We inspect `packages`, `py_module` and `package_dir`
@@ -184,12 +183,17 @@ class Ebuild(dict):
             * get dependencies from `setup_requires`,
               `install_requires` and `extra_requires`
 
-            * figure out if we need to :term:`DEPEND`/:term:`RDEPEND` on
+            * figure out if we need to :term:`DEPEND` / :term:`RDEPEND` on
               :mod:`setuptools` -- We inspect if `setup.py` imports
               :mod:`setuptools` or :mod:`pkg_resources`
 
             * calls :meth:`Ebuild.discover_docs_and_examples`
               and :meth:`Ebuild.discover_tests`
+
+            * determines :term:`DEPEND` / :term:`RDEPEND` on :mod:`setuptools`
+
+        :raises: :exc:`gpypi2.exc.GPyPiNoSetupFile`
+        :raises: :exc:`gpypi2.exc.GPyPiNoDistribution`
 
         """
         # save original functions to undo monkeypaching at the end
@@ -197,10 +201,10 @@ class Ebuild(dict):
         temp_distutils = distutils.core.setup
 
         # mock functions to get metadata
-        keywords = {}
+        self.setup_keywords = {}
 
         def wrapper(**kw):
-            keywords.update(kw)
+            self.setup_keywords.update(kw)
 
         # monkeypatch setups
         setuptools.setup = wrapper
@@ -223,10 +227,10 @@ class Ebuild(dict):
                 % self.unpacked_dir)
 
         # extract dependencies
-        self.install_requires = keywords.get('install_requires', '')
-        self.setup_requires = keywords.get('setup_requires', '')
-        self.extras_require = keywords.get('extras_require', {})
-        self.tests_require = keywords.get('tests_require', '')
+        self.install_requires = self.setup_keywords.get('install_requires', '')
+        self.setup_requires = self.setup_keywords.get('setup_requires', '')
+        self.extras_require = self.setup_keywords.get('extras_require', {})
+        self.tests_require = self.setup_keywords.get('tests_require', '')
 
         # dependencies resolving
         self.get_dependencies(self.install_requires)
@@ -247,9 +251,9 @@ class Ebuild(dict):
 
         # handle PYTHON_MODNAME
         module_names = []
-        module_names.extend(keywords.get('packages', []))
-        module_names.extend(keywords.get('py_modules', []))
-        module_names.extend(filter(None, keywords.get('package_dir', {}).keys()))
+        module_names.extend(self.setup_keywords.get('packages', []))
+        module_names.extend(self.setup_keywords.get('py_modules', []))
+        module_names.extend(filter(None, self.setup_keywords.get('package_dir', {}).keys()))
         # TODO: support provides/requires keyword
         # http://docs.python.org/distutils/setupscript.html
         # #relationships-between-distributions-and-packages
@@ -277,7 +281,6 @@ class Ebuild(dict):
         requirements = parse_requirements(vanilla_requirements)
 
         for req in requirements:
-            added_dep = False
             extras = req.extras
             category = Enamer.convert_category(req.project_name, {})
             # TODO: pass metadata from the project_name
@@ -293,7 +296,6 @@ class Ebuild(dict):
                 # dev-python/pn
                 self.add_rdepend(Enamer.construct_atom(pn, category,
                     uses=extras, if_use=if_use))
-                added_dep = True
             else:
                 comparator, ver = req.specs[0]
                 ver = Enamer.parse_pv(ver)[0] or ver
@@ -324,19 +326,20 @@ class Ebuild(dict):
                             "correct." % req)
                         self.add_rdepend(Enamer.construct_atom(pn, category,
                             uses=extras, if_use=if_use))
+                        self['warnings'].add("Could not determine dependency: %s" % req)
                     break
                 # Requirement.specs is a list of (comparator,version) tuples
                 if comparator == "==":
                     comparator = "="
-                if PortageUtils.is_valid_atom(Enamer.construct_atom(pn, category,
-                        ver, comparator, uses=extras)):
+                atom = Enamer.construct_atom(pn, category, ver, comparator,
+                    uses=extras)
+                if PortageUtils.is_valid_atom(atom):
                     self.add_rdepend(Enamer.construct_atom(pn, category, ver,
                         comparator, uses=extras, if_use=if_use))
                 else:
                     log.debug("Invalid PV in dependency: (Requirement %s) %s",
-                        req, temp_cpn)
-                    installed_pv = PortageUtils.\
-                        get_installed_ver(Enamer.\
+                        req, atom)
+                    installed_pv = PortageUtils.get_installed_ver(Enamer.\
                         construct_atom(pn, category, uses=extras, if_use=if_use))
                     if installed_pv:
                         # If we have it installed, use >= installed version
@@ -345,13 +348,10 @@ class Ebuild(dict):
                     else:
                         # If package has invalid version and we don't have
                         # an ebuild in portage, just add PN to DEPEND, no
-                        # version. This means the dep ebuild will have to
-                        # be created by adding --MY_? options using the CLI
+                        # version.
+                        self['warnings'].add("Could not determine dependency: %s" % req)
                         self.add_rdepend(Enamer.construct_atom(pn, category,
                             uses=extras, if_use=if_use))
-                added_dep = True
-            if not added_dep:
-                self['warnings'].add("Could not determine dependency: %s" % req)
 
     def add_setuptools_depend(self, req):
         """
@@ -372,6 +372,7 @@ class Ebuild(dict):
         and appropriate USE flags e.g. IUSE='doc examples'
 
         """
+        # TODO: deep introspection
         # TODO: add support for sphinx
         # TODO: better handling of DOCS
 
@@ -388,19 +389,18 @@ class Ebuild(dict):
                 break
 
     def discover_tests(self):
-        """Determine :term:`DISTUTILS_SRC_TEST` if tests detected"""
+        """Determine :term:`DISTUTILS_SRC_TEST` if tests are detected"""
         # TODO: py.test and trial
+        # TODO: deep introspection and merge with docs/examples
 
         for root, dirs, files in os.walk(self.unpacked_dir):
-            if 'tests' in files or 'test' in files:
+            if 'tests' in dirs or 'test' in dirs:
                 self['tests_method'] = 'setup.py'
 
-        for line in self.setup:
-            if "nose.collector" in line:
-                self['tests_method'] = 'nosetests'
+        if self.setup_keywords.get('test_suite', '') == 'nose.collector':
+            self['tests_method'] = 'nosetests'
 
-        if self['tests_method']:
-            self.get_dependencies(self.tests_require, 'test')
+        self.get_dependencies(self.tests_require, 'test')
 
     def update_with_s(self):
         """Add ${:term:`S`} to ebuild if needed."""
@@ -417,7 +417,6 @@ class Ebuild(dict):
             self["s"] = "${WORKDIR}/${MY_P}"
         else:
             pass # ${WORKDIR}/${P}
-
 
     def render(self):
         """Generate ebuild from template"""
@@ -438,17 +437,13 @@ class Ebuild(dict):
         formatting = self.options.format
         #background = self.config['background']
 
-        log.debug("Ebuild.print_formatted: ebuild %s",
-            Enamer.construct_atom(self['pn'], self['category'], self['pv']))
-
+        self.show_warnings()
         if formatting == "none":
             print self.ebuild_text
-            return
-
-        # use pygments to print ebuild
-        formatter = get_formatter_by_name(formatting)
-        log.info(highlight(self.ebuild_text, BashLexer(), formatter))
-        self.show_warnings()
+        else:
+            # use pygments to print ebuild
+            formatter = get_formatter_by_name(formatting)
+            print highlight(self.ebuild_text, BashLexer(), formatter)
 
     def create(self):
         """Write ebuild and update it after unpacking and examining ${S}"""
@@ -463,7 +458,7 @@ class Ebuild(dict):
             self.write(overwrite=True)
             log.info("Your ebuild is here: " + self.ebuild_path)
 
-        # If ebuild already exists, we don't unpack and get dependencies
+        # TODO: If ebuild already exists, we don't unpack and get dependencies
         # because they must exist.
         # We should add an option to force creating dependencies or should
         # overwrite be used?

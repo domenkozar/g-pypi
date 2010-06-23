@@ -579,35 +579,40 @@ class Enamer(object):
 
         """
         my_license = license.split(":: ")[-1]
-        # TODO: renew list of licences
         known_licenses = {
-            "Aladdin Free Public License (AFPL)": "Aladdin",
             "Academic Free License (AFL)": "AFL-3.0",
+            "Aladdin Free Public License (AFPL)": "Aladdin",
+            "Aladdin Free Public License (AFPL)": "Aladdin",
             "Apache Software License": "Apache-2.0",
             "Apple Public Source License": "Apple",
             "Artistic License": "Artistic-2",
             "BSD License": "BSD-2",
             "Common Public License": "CPL-1.0",
+            "GNU Affero General Public License v3": "AGPL-3",
             "GNU Free Documentation License (FDL)": "FDL-3",
             "GNU General Public License (GPL)": "GPL-2",
             "GNU Library or Lesser General Public License (LGPL)": "LGPL-2.1",
             "IBM Public License": "IBM",
             "Intel Open Source License": "Intel",
+            "ISC License (ISCL)": "ISC",
             "MIT License": "MIT",
             "Mozilla Public License 1.0 (MPL)": "MPL",
             "Mozilla Public License 1.1 (MPL 1.1)": "MPL-1.1",
             "Nethack General Public License": "nethack",
+            "Netscape Public License (NPL)": "NPL-1.1",
             "Open Group Test Suite License": "OGTSL",
-            "Python License (CNRI Python License)": "PYTHON",
+            "Public Domain": "public-domain",
+            "Python License (CNRI Python License)": "CNRI",
             "Python Software Foundation License": "PSF-2.4",
             "Qt Public License (QPL)": "QPL",
+            "Repoze Public License": "repoze",
             "Sleepycat License": "DB",
             "Sun Public License": "SPL",
             "University of Illinois/NCSA Open Source License": "ncsa-1.3",
             "W3C License": "WC3",
             "zlib/libpng License": "ZLIB",
             "Zope Public License": "ZPL",
-            "Public Domain": "public-domain"}
+        }
         return known_licenses.get(my_license, "")
 
     @classmethod
