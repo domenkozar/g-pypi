@@ -33,7 +33,7 @@ Python API
    :inherited-members:
    :show-inheritance:
 
-:mod:`gpypi2.exc` -- GPyPi specific Exceptions
+:mod:`gpypi2.exc` -- :mod:`gpypi2` specific Exceptions
 =========================================================
 
 .. automodule:: gpypi2.exc
@@ -41,7 +41,7 @@ Python API
    :undoc-members:
    :show-inheritance:
 
-:mod:`gpypi2.portage_utils` -- GPyPi portage utilities
+:mod:`gpypi2.portage_utils` -- Portage utilities
 =========================================================
 
 .. automodule:: gpypi2.portage_utils

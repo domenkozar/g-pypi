@@ -13,7 +13,6 @@ import inspect
 import logging
 
 import argparse
-from pkg_resources import Requirement
 
 from yolk.pypi import CheeseShop
 from yolk.yolklib import get_highest_version
@@ -44,7 +43,6 @@ class GPyPI(object):
     """
 
     def __init__(self, package_name, version, options):
-
         self.package_name = package_name
         self.version = version
         self.options = options
@@ -145,10 +143,6 @@ class GPyPI(object):
         Use setuptools to find a package's URI
 
         """
-        try:
-            req = Requirement.parse(self.package_name)
-        except ValueError:
-            self.raise_error("The package seems to have a ridiculous name or version, can't proceed.")
 
         #if self.options.subversion:
         #    src_uri = get_download_uri(self.package_name, "dev", "source")
@@ -220,11 +214,12 @@ class GPyPI(object):
             return self.pypi.release_data(self.package_name, get_highest_version(vers))
 
 
-def main():
+def main(args=sys.argv[1:]):
     """Parse command-line options and do it.
     Core function for gpypi2 command.
     """
-    main_parser = argparse.ArgumentParser(prog='gpypi2')
+    main_parser = argparse.ArgumentParser(prog='gpypi2',
+        description="Builds ebuilds from PyPi.")
     main_parser.add_argument('-v', '--version', action='version',
         version='%(prog)s ' + __version__)
 
@@ -249,11 +244,16 @@ def main():
         help="Disable colorful output", default=False)
 
     # subcommands
+    def add_positional_arguments(temp_parser):
+        temp_parser.add_argument('package name', action='store')
+        temp_parser.add_argument('package version', nargs='?', default=None)
+        return temp_parser
+
+    # TODO: detailed description
     subparsers = main_parser.add_subparsers(title="commands", dest="command")
 
-    parser_create = subparsers.add_parser('create', help="Write ebuild to an overlay.", parents=[parser])
-    parser_create.add_argument('package', action='store')
-    parser_create.add_argument('version', nargs='?', default=None)
+    parser_create = subparsers.add_parser('create', help="Write ebuild and it's dependencies to an overlay.", parents=[parser])
+    parser_create = add_positional_arguments(parser_create)
     parser_create.add_argument("-l", "--overlay", action='store', dest='overlay',
         metavar='OVERLAY_NAME', default=None,
         help='Specify overy to use by name ($OVERLAY/profiles/repo_name)')
@@ -268,15 +268,21 @@ def main():
         dest="pretend", default=False, help="Print ebuild to stdout, "
         "don't write ebuild file, don't download SRC_URI.")
 
+    # TODO: detailed description
     parser_echo = subparsers.add_parser('echo', help="Echo ebuild to stdout.", parents=[parser])
-    parser_echo.add_argument('package', action='store')
-    parser_echo.add_argument('version', nargs='?', default=None)
+    parser_echo = add_positional_arguments(parser_echo)
     parser_echo.add_argument("--format", action='store', dest="format",
         default=None, help="Format when printing to stdout: console, "
         "html, bbcode, or none")
 
-    args = main_parser.parse_args()
+    parser_install = subparsers.add_parser('install', help="Install ebuild and it's dependencies", parents=[parser])
+    parser_install = add_positional_arguments(parser_install)
+    # TODO: create arguments
+    # TODO: use execvp to load portage process
 
+    args = main_parser.parse_args(args)
+
+    # TODO: use mutually exclusive arguments
     if args.debug and args.quiet:
         main_parser.error('Can\'t use --debug and --quiet altogether.')
 
