@@ -245,8 +245,8 @@ def main(args=sys.argv[1:]):
 
     # subcommands
     def add_positional_arguments(temp_parser):
-        temp_parser.add_argument('package name', action='store')
-        temp_parser.add_argument('package version', nargs='?', default=None)
+        temp_parser.add_argument('package', action='store')
+        temp_parser.add_argument('version', nargs='?', default=None)
         return temp_parser
 
     # TODO: detailed description
