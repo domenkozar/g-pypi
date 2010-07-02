@@ -41,8 +41,23 @@ Getting started
 ***************
 
 :command:`gpypi2` is a command line tool with vision to make
-Gentoo developers life easier. It's usage should be pretty
-self explainatory through command's help::
+Gentoo developers life easier. To create an ebuild and it's dependencies::
+
+    $ sudo gpypi2 create --overlay sunrise pylons
+    * Generating ebuild: Jinja2 2.5
+    * Your ebuild is here: /usr/local/portage/dev-python/jinja2/jinja2-2.5.ebuild
+    * Dependency needed: Babel
+    * Generating ebuild: Babel 0.9.5
+    * Your ebuild is here: /usr/local/portage/dev-python/babel/babel-0.9.5.ebuild
+    * Dependency needed: pytz
+    * Generating ebuild: pytz 2010h
+    * Your ebuild is here: /usr/local/portage/dev-python/pytz/pytz-2010h.ebuild
+
+.. warning::
+    
+    Root login must be used for populating overlays and unpacking ebuilds.
+
+Usage should be pretty self explainatory through help::
 
     $ sudo gpypi2 -h
     usage: gpypi2 [-h] {create,echo} ...
@@ -90,7 +105,3 @@ and most of the time one will use the :command:`pypi2 create` command::
       -p, --pretend         Print ebuild to stdout, don't write ebuild file, don't
                             download SRC_URI.
 
-
-.. warning::
-    
-    Root login must be used for populating overlays and unpacking ebuilds.

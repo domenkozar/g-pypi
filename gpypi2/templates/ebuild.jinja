@@ -70,13 +70,13 @@ src_install() {
     distutils_src_install
     {% if 'docs' in use %}
     if use doc; then
-        dodoc "${S}"/{{ docs_dir }}/*\n'
+        dodoc -r {{ docs_dir }}
     fi
     {% endif %}
     {% if 'examples' in use %}
     if use examples; then
-        insinto /usr/share/doc/"${PF}"/examples
-        doins -r '"${S}"/{{ examples_dir }}/*\n'
+        insinto /usr/share/doc/"${PF}"/
+        doins -r {{ examples_dir }}
     fi
     {% endif %}
 }
