@@ -439,11 +439,11 @@ class Ebuild(dict):
 
         self.show_warnings()
         if formatting == "none":
-            print self.ebuild_text
+            print self.output
         else:
             # use pygments to print ebuild
             formatter = get_formatter_by_name(formatting)
-            print highlight(self.ebuild_text, BashLexer(), formatter)
+            print highlight(self.output, BashLexer(), formatter)
 
     def create(self):
         """Write ebuild and update it after unpacking and examining ${S}"""
@@ -498,7 +498,7 @@ class Ebuild(dict):
 
     def show_warnings(self):
         """Log warnings for incorrect ebuild syntax."""
-        for warning in self.warnings:
+        for warning in self['warnings']:
             log.warn(warning)
 
     def add_use(self, use_flag):

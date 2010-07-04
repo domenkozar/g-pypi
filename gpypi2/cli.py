@@ -19,9 +19,10 @@ from yolk.yolklib import get_highest_version
 from yolk.setuptools_support import get_download_uri
 
 from gpypi2 import __version__
+from gpypi2.exc import *
+from gpypi2.enamer import Enamer
 from gpypi2.ebuild import Ebuild
 from gpypi2.portage_utils import PortageUtils
-from gpypi2.exc import *
 from gpypi2.utils import PortageFormatter, PortageStreamHandler
 
 
@@ -29,7 +30,7 @@ log = logging.getLogger(__name__)
 
 class GPyPI(object):
     """
-    Main class for command-line interface
+    Main class for GPyPi interface
 
     :param package_name: case-insensitive package name
     :type package_name: string
@@ -38,7 +39,7 @@ class GPyPI(object):
     :type version: string
 
     :param options: command-line options
-    :type options: OptParser config object
+    :type options: ArgParse options
 
     """
 
@@ -48,7 +49,6 @@ class GPyPI(object):
         self.options = options
         self.tree = [(package_name, version)]
         self.pypi = CheeseShop()
-        self.create_ebuilds()
 
     def create_ebuilds(self):
         """
@@ -56,9 +56,6 @@ class GPyPI(object):
         if needed. If no version is given we use the highest available.
 
         """
-        #Create first ebuild then turn off overwrite in case a dependency
-        #ebuild already exists
-        #self.logger.debug("Creating dep tree...")
         while len(self.tree):
             (project_name, version) = self.tree.pop(0)
             #self.logger.debug(self.tree)
@@ -71,12 +68,12 @@ class GPyPI(object):
                     if self.options.no_deps:
                         pass
                     else:
-                        self.add_dep(req.project_name)
+                        self.handle_dependencies(req.project_name)
             # TODO: Only force overwriting and category on first ebuild created, not dependencies
             self.options.overwrite = False
             self.options.category = None
 
-    def add_dep(self, project_name):
+    def handle_dependencies(self, project_name):
         """Add dependency"""
         pkgs = []
         if len(self.tree):
@@ -193,7 +190,7 @@ class GPyPI(object):
 
         ebuild.set_metadata(self.query_metadata())
 
-        if self.options.pretend:
+        if self.options.command == 'echo' or self.options.pretend:
             ebuild.print_formatted()
         else:
             ebuild.create()
@@ -214,15 +211,48 @@ class GPyPI(object):
             return self.pypi.release_data(self.package_name, get_highest_version(vers))
 
 
+class CLI(object):
+    """
+    Dispatcher based on parsed arguments. Holds
+    all commands methods.
+
+    """
+
+    def __init__(self, args):
+        self.args = args
+        getattr(self, args.command)()
+
+    def create(self):
+        """"""
+        gpypi = GPyPI(self.args.package, self.args.version, self.args)
+        gpypi.create_ebuilds()
+
+    def install(self):
+        """"""
+        self.create()
+        package = Enamer.parse_pn(self.args.package)[0]
+        os.execvp('emerge', ['emerge', '-av', package or self.args.package])
+        # TODO: support for emerge arguments
+
+    def echo(self):
+        """"""
+        gpypi = GPyPI(self.args.package, self.args.version, self.args)
+        gpypi.do_ebuild()
+        # TODO: cleanup
+
+
 def main(args=sys.argv[1:]):
     """Parse command-line options and do it.
     Core function for gpypi2 command.
+
+    Dispatches commands to :class:`gpypi2.cli.CLI`
     """
     main_parser = argparse.ArgumentParser(prog='gpypi2',
         description="Builds ebuilds from PyPi.")
     main_parser.add_argument('-v', '--version', action='version',
         version='%(prog)s ' + __version__)
 
+    # global options
     parser = argparse.ArgumentParser(add_help=False)
     parser.add_argument("-P", "--PN", action='store', dest="pn",
         default=False, help="Specify PN to use when naming ebuild.")
@@ -236,64 +266,63 @@ def main(args=sys.argv[1:]):
         default=False, help="Specify MY_P")
     parser.add_argument("-u", "--uri", action='store', dest="uri",
         default=False, help="Specify URI of package if PyPI doesn't have it.")
-    parser.add_argument("-q", "--quiet", action='store_true',
-        dest="quiet", default=False, help="Show less output.")
-    parser.add_argument("-d", "--debug", action='store_true',
-        dest="debug", default=False, help="Show debug information.")
     parser.add_argument('--nocolors', action='store_true', dest='nocolors',
-        help="Disable colorful output", default=False)
+        default=False, help="Disable colorful output")
+    logging_group = parser.add_mutually_exclusive_group()
+    logging_group.add_argument("-q", "--quiet", action='store_true',
+        dest="quiet", default=False, help="Show less output.")
+    logging_group.add_argument("-d", "--debug", action='store_true',
+        dest="debug", default=False, help="Show debug information.")
 
-    # subcommands
-    def add_positional_arguments(temp_parser):
-        temp_parser.add_argument('package', action='store')
-        temp_parser.add_argument('version', nargs='?', default=None)
-        return temp_parser
+    # ebuild handling options
+    ebuild_parser = argparse.ArgumentParser(add_help=False)
+    ebuild_parser.add_argument('package', action='store')
+    ebuild_parser.add_argument('version', nargs='?', default=None)
 
-    # TODO: detailed description
-    subparsers = main_parser.add_subparsers(title="commands", dest="command")
-
-    parser_create = subparsers.add_parser('create', help="Write ebuild and it's dependencies to an overlay.", parents=[parser])
-    parser_create = add_positional_arguments(parser_create)
-    parser_create.add_argument("-l", "--overlay", action='store', dest='overlay',
+    # create & install options
+    create_install_parser = argparse.ArgumentParser(add_help=False)
+    create_install_parser.add_argument("-l", "--overlay", action='store', dest='overlay',
         metavar='OVERLAY_NAME', default=None,
         help='Specify overy to use by name ($OVERLAY/profiles/repo_name)')
-    parser_create.add_argument("-o", "--overwrite", action='store_true',
+    create_install_parser.add_argument("-o", "--overwrite", action='store_true',
         dest="overwrite", default=False, help= "Overwrite existing ebuild.")
-    parser_create.add_argument("--no-deps", action='store_true', dest="no_deps",
+    create_install_parser.add_argument("--no-deps", action='store_true', dest="no_deps",
         default=False, help="Don't create ebuilds for any needed dependencies.")
-    parser_create.add_argument("-c", "--portage-category", action='store',
+    create_install_parser.add_argument("-c", "--portage-category", action='store',
         dest="category", default="dev-python",
         help="Specify category to use when creating ebuild. Default is dev-python")
-    parser_create.add_argument("-p", "--pretend", action='store_true',
+    create_install_parser.add_argument("-p", "--pretend", action='store_true',
         dest="pretend", default=False, help="Print ebuild to stdout, "
         "don't write ebuild file, don't download SRC_URI.")
 
-    # TODO: detailed description
-    parser_echo = subparsers.add_parser('echo', help="Echo ebuild to stdout.", parents=[parser])
-    parser_echo = add_positional_arguments(parser_echo)
+    ## subcommands
+    subparsers = main_parser.add_subparsers(title="commands", dest="command")
+
+    parser_create = subparsers.add_parser('create', help="Write ebuild and it's dependencies to an overlay",
+        description="Write ebuild and it's dependencies to an overlay",
+        parents=[parser, ebuild_parser, create_install_parser])
+
+    parser_echo = subparsers.add_parser('echo', help="Echo ebuild to stdout",
+        description="Echo ebuild to stdout",
+        parents=[parser, ebuild_parser])
     parser_echo.add_argument("--format", action='store', dest="format",
-        default=None, help="Format when printing to stdout: console, "
+        default='none', help="Format when printing to stdout: console, "
         "html, bbcode, or none")
 
-    parser_install = subparsers.add_parser('install', help="Install ebuild and it's dependencies", parents=[parser])
-    parser_install = add_positional_arguments(parser_install)
-    # TODO: create arguments
-    # TODO: use execvp to load portage process
+    parser_install = subparsers.add_parser('install', help="Install ebuild and it's dependencies",
+        description="Install ebuild and it's dependencies",
+        parents=[parser, ebuild_parser, create_install_parser])
 
     args = main_parser.parse_args(args)
 
-    # TODO: use mutually exclusive arguments
-    if args.debug and args.quiet:
-        main_parser.error('Can\'t use --debug and --quiet altogether.')
-
     # TODO: config
-    logger = logging.getLogger()
     if args.nocolors:
         ch = logging.StreamHandler()
         ch.setFormatter(logging.Formatter("%(message)s"))
     else:
         ch = PortageStreamHandler()
         ch.setFormatter(PortageFormatter("%(message)s"))
+    logger = logging.getLogger()
     logger.addHandler(ch)
 
     if args.debug:
@@ -306,8 +335,9 @@ def main(args=sys.argv[1:]):
     if os.geteuid() != 0:
         main_parser.error('Must be run as root.')
 
+    # handle command
     try:
-        gpypi = GPyPI(args.package, args.version, args)
+        CLI(args)
     except:
         # enter pdb debugger when debugging is enabled
         if args.debug:
