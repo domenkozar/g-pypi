@@ -41,3 +41,5 @@ Glossary
     PYTHON_MODNAME
         List of python module names in this ebuild
 
+    PyPi
+        Python Package Index (CPAN alike repository for packages) — http://pypi.python.org/pypi

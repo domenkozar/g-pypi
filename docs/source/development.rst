@@ -13,7 +13,13 @@ Workflow of creating an ebuild
 
     #. Initial ebuild is written to overlay with :term:`SRC_URI`
 
-    #. Ebuild in unpacked.
+    #. Ebuild in unpacked with Portage API through shell
+
+    #. Unpacked dir is inspected for setup.py information
+
+    #. Ebuild is rendered again and written to an overlay
+
+    #. Possible dependencies from setup.py are resolved and whole process is repeated for each one.
 
 
 How are :term:`PV`, :term:`PN`, :term:`MY_PV`, :term:`MY_PN` and :term:`SRC_URI` determined?

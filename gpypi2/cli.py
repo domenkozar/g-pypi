@@ -58,8 +58,6 @@ class GPyPI(object):
         """
         while len(self.tree):
             (project_name, version) = self.tree.pop(0)
-            #self.logger.debug(self.tree)
-            #self.logger.debug("%s %s" % (project_name, version))
             self.package_name = project_name
             self.version = version
             requires = self.do_ebuild()
@@ -69,36 +67,48 @@ class GPyPI(object):
                         pass
                     else:
                         self.handle_dependencies(req.project_name)
-            # TODO: Only force overwriting and category on first ebuild created, not dependencies
+            # TODO: disable some options after first ebuild is created
             self.options.overwrite = False
             self.options.category = None
 
     def handle_dependencies(self, project_name):
-        """Add dependency"""
+        """Add dependency if not already in self.tree"""
         pkgs = []
         if len(self.tree):
             for deps in self.tree:
                 pkgs.append(deps[0])
 
         if project_name not in pkgs:
-            # TODO: resolve version and use it
+            # TODO: document that we can not query pypi with version spec
+            # for dependencies
             self.tree.append((project_name, None))
             log.info("Dependency needed: %s" % project_name)
 
     def url_from_pypi(self):
         """
-        Query PyPI for package's download URL
+        Query PyPI to find a package's URI
 
         :returns: source URL string
 
         """
-
         try:
             return self.pypi.get_download_urls(self.package_name, self.version, pkg_type="source")[0]
         except IndexError:
             return None
 
-    def find_uri(self, method="setuptools"):
+    def url_from_setuptools(self):
+        """
+        Use setuptools to find a package's URI
+
+        :returns: source URL string or None
+
+        """
+        #if self.options.subversion:
+        #    src_uri = get_download_uri(self.package_name, "dev", "source")
+        #else:
+        return get_download_uri(self.package_name, self.version, "source", self.options.index_url)
+
+    def find_uri(self, method="all"):
         """
         Returns download URI for package
         If no package version was given it returns highest available
@@ -117,43 +127,15 @@ class GPyPI(object):
 
         if (method == "all" or method == "setuptools") and not download_url:
             #Sometimes setuptools can find a package URI if PyPI doesn't have it
-            download_url = self.uri_from_setuptools()
-        return download_url
-
-    def get_uri(self, svn=False):
-        """
-        Attempt to find a package's download URI
-
-        :returns: download_url string
-
-        """
-        download_url = self.find_uri()
+            download_url = self.url_from_setuptools()
 
         if not download_url:
-            self.raise_error("Can't find SRC_URI for '%s'." %  self.package_name)
+            log.error("Can't find SRC_URI for '%s'." %  self.package_name)
 
+        # TODO: configuratior
         log.debug("Package URI: %s " % download_url)
+
         return download_url
-
-    def uri_from_setuptools(self):
-        """
-        Use setuptools to find a package's URI
-
-        """
-
-        #if self.options.subversion:
-        #    src_uri = get_download_uri(self.package_name, "dev", "source")
-        #else:
-        src_uri = get_download_uri(self.package_name, self.version, "source")
-        if not src_uri:
-            self.raise_error("The package has no source URI available.")
-        return src_uri
-
-    def verify_pkgver(self):
-        """
-        Query PyPI to make sure we have correct case for package name
-        """
-        pass
 
     def do_ebuild(self):
         """
@@ -171,12 +153,16 @@ class GPyPI(object):
         else:
             self.version = get_highest_version(versions)
 
+        # TODO: self.options.uri only for first ebuild
         if self.options.uri:
             download_url = self.options.uri
         else:
-            download_url = self.get_uri()
-        #try:
+            # TODO: make find_uri method configurable
+            download_url = self.find_uri()
+
         log.info('Generating ebuild: %s %s', self.package_name, self.version)
+
+        #try:
         ebuild = Ebuild(self.package_name, self.version, download_url, self.options)
         # TODO: convert exceptions to ours
         #except portage_exception.InvalidVersionString:
@@ -266,6 +252,10 @@ def main(args=sys.argv[1:]):
         default=False, help="Specify MY_P")
     parser.add_argument("-u", "--uri", action='store', dest="uri",
         default=False, help="Specify URI of package if PyPI doesn't have it.")
+    parser.add_argument("-i", "--index-url", action='store', dest="index_url",
+        default="http://pypi.python.org/pypi",
+        help="Base URL for PyPi")
+    # TODO: release yolk with support to query third party PyPi
     parser.add_argument('--nocolors', action='store_true', dest='nocolors',
         default=False, help="Disable colorful output")
     logging_group = parser.add_mutually_exclusive_group()

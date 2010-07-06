@@ -42,6 +42,7 @@ setup(name='g-pypi2',
     tests_require=[
         'nose',
         'mocker',
+        'mock',
         'ScriptTest',
     ],
     extras_require={
