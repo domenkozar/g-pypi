@@ -44,3 +44,24 @@ and then fixed accordingly.
     Issues should not be closed until there are appropriate tests
     and documentation for the changeset.
 
+
+TODO
+********************************************************
+
+List of features that may be implemented in no particular order:
+
+* atomic actions (cleanup on traceback/error)
+
+* configuration
+
+* interactive questionaire
+
+* repoman/echangelog/metadata integration
+
+* exceptions documentation and catching exceptions in CLI
+
+* implement setuptools Feature class
+
+* issue HEAD request to homepages (warn on failure)
+
+* finish SrcUriNamer implementation

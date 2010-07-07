@@ -256,6 +256,7 @@ def main(args=sys.argv[1:]):
         default="http://pypi.python.org/pypi",
         help="Base URL for PyPi")
     # TODO: release yolk with support to query third party PyPi
+    # TODO: test --index-url is always taken in account
     parser.add_argument('--nocolors', action='store_true', dest='nocolors',
         default=False, help="Disable colorful output")
     logging_group = parser.add_mutually_exclusive_group()
