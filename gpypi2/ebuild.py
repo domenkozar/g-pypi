@@ -65,6 +65,7 @@ class Ebuild(dict):
     DOC_DIRS = ['doc', 'docs', 'documentation']
     EXAMPLES_DIRS = ['example', 'examples', 'demo', 'demos']
     EBUILD_TEMPLATE = 'ebuild.jinja'
+    EBUILD_TEMPLATE_PACKAGE = 'gpypi2'
 
     def __init__(self, up_pn, up_pv, download_url, options):
         self.metadata = None
@@ -424,7 +425,9 @@ class Ebuild(dict):
         # Add homepage, license and description from metadata
         self.parse_metadata()
 
-        env = Environment(loader=PackageLoader('gpypi2', 'templates'))
+        env = Environment(
+            loader=PackageLoader(self.EBUILD_TEMPLATE_PACKAGE, 'templates'),
+            trim_blocks=True)
         self.output = env.get_template(self.EBUILD_TEMPLATE).render(self)
         # TODO: custom templates support
         # TODO: convert 4 spaces to tabs
