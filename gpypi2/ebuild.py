@@ -437,6 +437,11 @@ class Ebuild(dict):
         formatting = self.options.format
         #background = self.config['background']
 
+        # TODO: configurator
+        self.options.overwrite=True
+        self.options.overlay=False
+        self.create()
+
         self.show_warnings()
         if formatting == "none":
             print self.output
