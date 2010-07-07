@@ -429,8 +429,7 @@ class Ebuild(dict):
             loader=PackageLoader(self.EBUILD_TEMPLATE_PACKAGE, 'templates'),
             trim_blocks=True)
         self.output = env.get_template(self.EBUILD_TEMPLATE).render(self)
-        # TODO: custom templates support
-        # TODO: convert 4 spaces to tabs
+        self.output = self.output.replace('    ', '\t')
         return self.output
 
     def print_formatted(self):
