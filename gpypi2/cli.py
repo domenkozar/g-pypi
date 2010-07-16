@@ -252,13 +252,15 @@ def main(args=sys.argv[1:]):
         default=False, help="Specify MY_P")
     parser.add_argument("-u", "--uri", action='store', dest="uri",
         default=False, help="Specify URI of package if PyPI doesn't have it.")
-    parser.add_argument("-i", "--index-url", action='store', dest="index_url",
-        default="http://pypi.python.org/pypi",
-        help="Base URL for PyPi")
-    # TODO: release yolk with support to query third party PyPi
-    # TODO: test --index-url is always taken in account
     parser.add_argument('--nocolors', action='store_true', dest='nocolors',
         default=False, help="Disable colorful output")
+    parser.add_argument("--config-file", action='store', dest="config_file",
+        default=os.path.expanduser("~/.gpypi2"), help="Absolute path to a config file")
+    parser.add_argument("-i", "--index-url", action='store', dest="index_url",
+        default="http://pypi.python.org/pypi", help="Base URL for PyPi")
+    # TODO: release yolk with support to query third party PyPi
+    # TODO: test --index-url is always taken in account
+
     logging_group = parser.add_mutually_exclusive_group()
     logging_group.add_argument("-q", "--quiet", action='store_true',
         dest="quiet", default=False, help="Show less output.")
@@ -306,7 +308,7 @@ def main(args=sys.argv[1:]):
 
     args = main_parser.parse_args(args)
 
-    # TODO: config
+    # TODO: configurable logging
     if args.nocolors:
         ch = logging.StreamHandler()
         ch.setFormatter(logging.Formatter("%(message)s"))
@@ -323,6 +325,8 @@ def main(args=sys.argv[1:]):
     else:
         logger.setLevel(logging.INFO)
 
+    # root must be used for write permission in overlay and for
+    # unpacking of ebuilds
     if os.geteuid() != 0:
         main_parser.error('Must be run as root.')
 

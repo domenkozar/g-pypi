@@ -60,8 +60,10 @@ List of features that may be implemented in no particular order:
 
 * exceptions documentation and catching exceptions in CLI
 
-* implement setuptools Feature class
-
 * issue HEAD request to homepages (warn on failure)
 
 * finish SrcUriNamer implementation
+
+* python setup.py bdist_ebuild
+
+* implement setuptools Feature class

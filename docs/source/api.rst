@@ -16,6 +16,14 @@ Python API
    :undoc-members:
    :show-inheritance:
 
+:mod:`gpypi2.config` -- Configuration handling
+====================================================
+
+.. automodule:: gpypi2.config
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 :mod:`gpypi2.ebuild` -- Ebuild generation module
 =========================================================
 
@@ -56,6 +64,22 @@ Python API
 
 .. automodule:: gpypi2.tests
 
+:mod:`gpypi2.tests.test_cli`
+=====================================
+
+.. automodule:: gpypi2.tests.test_cli
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+:mod:`gpypi2.tests.test_config`
+=====================================
+
+.. automodule:: gpypi2.tests.test_config
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 :mod:`gpypi2.tests.test_ebuild`
 =====================================
 
@@ -84,14 +108,6 @@ Python API
 =====================================
 
 .. automodule:: gpypi2.tests.test_pypi
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-:mod:`gpypi2.tests.test_cli`
-=====================================
-
-.. automodule:: gpypi2.tests.test_cli
    :members:
    :undoc-members:
    :show-inheritance:

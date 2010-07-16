@@ -9,7 +9,16 @@ import types
 import logging
 
 from portage.output import EOutput
+from pkg_resources import EntryPoint
 
+
+def load_model(dotted_name):
+    """"""
+    if isinstance(dotted_name, basestring):
+        return EntryPoint.parse('x=%s' % dotted_name).load(False)
+    else:
+        # Assume it's already loaded.
+        return dotted_name
 
 def import_path(fullpath):
     """Import a file with full path specification. Allows one to
@@ -28,6 +37,17 @@ def import_path(fullpath):
     reload(module) # Might be out of date during tests
     del sys.path[0]
     return module
+
+def asbool(obj):
+    if isinstance(obj, (str, unicode)):
+        obj = obj.strip().lower()
+        if obj in ['true', 'yes', 'on', 'y', 't', '1']:
+            return True
+        elif obj in ['false', 'no', 'off', 'n', 'f', '0']:
+            return False
+        else:
+            raise ValueError("String is not true/false: %r" % obj)
+    return bool(obj)
 
 
 class PortageStreamHandler(logging.StreamHandler):

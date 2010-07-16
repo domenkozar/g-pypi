@@ -11,7 +11,7 @@ version = '0.1'
 
 setup(name='g-pypi2',
     version=version,
-    description="g-pypi2 manages ebuilds for Gentoo Linux using information in PyPi (Python Package Index)",
+    description="creates ebuilds for Gentoo Linux from Python Package Index",
     long_description="""""", # TODO: provide long description from docs index.rst
     keywords='gentoo linux distribution ebuild package pypi',
     author='Domen Kozar',

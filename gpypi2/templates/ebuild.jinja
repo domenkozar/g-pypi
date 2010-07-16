@@ -9,9 +9,9 @@
 {%- endif %}
 EAPI="3"
 SUPPORT_PYTHON_ABIS="1"
-{% if tests_method -%}
+{% if tests_method %}
 DISTUTILS_SRC_TEST="{{ tests_method }}"
-{%- endif %}
+{% endif %}
 
 inherit {{ inherit|join(" ") }}
 
@@ -53,18 +53,6 @@ S="{{ s }}"
 PYTHON_MODNAME="{{ python_modname|join(" ") }}"
 {% endif %}
 
-{% if src_unpack %}
-src_unpack() {
-{{ src_unpack }}
-}
-
-{% endif %}
-{% if src_compile %}
-src_compile() {
-{{ src_compile }}
-}
-
-{% endif %}
 {% if src_install %}
 src_install() {
     distutils_src_install
@@ -80,5 +68,4 @@ src_install() {
     fi
     {% endif %}
 }
-
 {% endif %}

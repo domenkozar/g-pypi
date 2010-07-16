@@ -105,3 +105,11 @@ and most of the time one will use the :command:`pypi2 create` command::
       -p, --pretend         Print ebuild to stdout, don't write ebuild file, don't
                             download SRC_URI.
 
+Configuration
+**************************
+
+:mod:`gpypi2` tries offer extendable, easy-to-setup configuration.
+
+# TODO: from where is the config manager stuff loaded
+# TODO: what is the philosofy behind config manager and configs
+# TODO: a word about questionnaire behaviour

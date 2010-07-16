@@ -30,3 +30,6 @@ class GPyPiCouldNotCreateEbuildPath(GPyPiException):
 
 class GPyPiOverlayDoesNotExist(GPyPiException):
     """"""
+
+class GPyPiConfigurationError(GPyPiException):
+    """"""

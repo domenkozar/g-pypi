@@ -912,6 +912,7 @@ class TestEnamer(BaseTestCase):
         results = Enamer.get_vars(uri, up_pn, up_pv)
         self.assertEqual(correct, results)
 
+    @unittest2.expectedFailure
     def test_get_vars43(self):
         """v1.0.0 -> 1.0.0"""
         up_pn = "bdflib"
@@ -930,7 +931,7 @@ class TestEnamer(BaseTestCase):
         results = Enamer.get_vars(uri, up_pn, up_pv)
         self.assertEqual(correct, results)
 
-    def test_get_vars43(self):
+    def test_get_vars44(self):
         """0.1r1 -> 0.1.1"""
         up_pn = "flamboyantsshd"
         up_pv = "0.1r1"
@@ -948,7 +949,7 @@ class TestEnamer(BaseTestCase):
         results = Enamer.get_vars(uri, up_pn, up_pv)
         self.assertEqual(correct, results)
 
-    def test_get_vars44(self):
+    def test_get_vars45(self):
         """1.0.r39 -> 1.0.39"""
         up_pn = "fusepy"
         up_pv = "1.0.r39"
@@ -966,7 +967,7 @@ class TestEnamer(BaseTestCase):
         results = Enamer.get_vars(uri, up_pn, up_pv)
         self.assertEqual(correct, results)
 
-    def test_get_vars45(self):
+    def test_get_vars46(self):
         """0.3.0patch1 -> 0.3.0.1"""
         up_pn = "pymage"
         up_pv = "0.3.0patch1"
@@ -984,7 +985,7 @@ class TestEnamer(BaseTestCase):
         results = Enamer.get_vars(uri, up_pn, up_pv)
         self.assertEqual(correct, results)
 
-    def test_get_vars46(self):
+    def test_get_vars47(self):
         """1.3p3 -> 1.3.3"""
         # TODO: uri and my_p do not match
         up_pn = "pyshipping"
