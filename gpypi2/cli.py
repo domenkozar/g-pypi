@@ -21,6 +21,7 @@ from yolk.setuptools_support import get_download_uri
 from gpypi2 import __version__
 from gpypi2.exc import *
 from gpypi2.enamer import Enamer
+from gpypi2.config import Config, ConfigManager
 from gpypi2.ebuild import Ebuild
 from gpypi2.portage_utils import PortageUtils
 from gpypi2.utils import PortageFormatter, PortageStreamHandler
@@ -202,27 +203,32 @@ class CLI(object):
     Dispatcher based on parsed arguments. Holds
     all commands methods.
 
+    :param config: Options to be used when making ebuilds
+    :type config: :class:`gpypi2.config.ConfigManager`
+    :param command: Command name to execute
+    :type command: string
+
     """
 
-    def __init__(self, args):
-        self.args = args
-        getattr(self, args.command)()
+    def __init__(self, config, command):
+        self.config = config
+        getattr(self, command)()
 
     def create(self):
         """"""
-        gpypi = GPyPI(self.args.package, self.args.version, self.args)
+        gpypi = GPyPI(self.config.package, self.config.version, self.config)
         gpypi.create_ebuilds()
 
     def install(self):
         """"""
         self.create()
-        package = Enamer.parse_pn(self.args.package)[0]
-        os.execvp('emerge', ['emerge', '-av', package or self.args.package])
+        package = Enamer.parse_pn(self.config.package)[0]
+        os.execvp('emerge', ['emerge', '-av', package or self.config.package])
         # TODO: support for emerge arguments
 
     def echo(self):
         """"""
-        gpypi = GPyPI(self.args.package, self.args.version, self.args)
+        gpypi = GPyPI(self.config.package, self.config.version, self.config)
         gpypi.do_ebuild()
         # TODO: cleanup
 
@@ -241,25 +247,25 @@ def main(args=sys.argv[1:]):
     # global options
     parser = argparse.ArgumentParser(add_help=False)
     parser.add_argument("-P", "--PN", action='store', dest="pn",
-        default=False, help="Specify PN to use when naming ebuild.")
+        help=Config.allowed_options['pn'][0])
     parser.add_argument("-V", "--PV", action='store', dest="pv",
-        default=False, help="Specify PV to use when naming ebuild.")
-    parser.add_argument("--MY_PV", action='store', dest="my_pv",
-        default=False, help="Specify MY_PV")
-    parser.add_argument("--MY_PN", action='store', dest="my_pn",
-        default=False, help="Specify MY_PN")
-    parser.add_argument("--MY_P", action='store', dest="my_p",
-        default=False, help="Specify MY_P")
+        help=Config.allowed_options['pv'][0])
+    parser.add_argument("--MY-PV", action='store', dest="my_pv",
+        help=Config.allowed_options['my_pv'][0])
+    parser.add_argument("--MY-PN", action='store', dest="my_pn",
+        help=Config.allowed_options['my_pn'][0])
+    parser.add_argument("--MY-P", action='store', dest="my_p",
+        help=Config.allowed_options['my_p'][0])
     parser.add_argument("-u", "--uri", action='store', dest="uri",
-        default=False, help="Specify URI of package if PyPI doesn't have it.")
+        help=Config.allowed_options['uri'][0])
+    parser.add_argument("-i", "--index-url", action='store', dest="index_url",
+        help=Config.allowed_options['index_url'][0])
+    # TODO: release yolk with support to query third party PyPi
+    # TODO: test --index-url is always taken in account
     parser.add_argument('--nocolors', action='store_true', dest='nocolors',
         default=False, help="Disable colorful output")
     parser.add_argument("--config-file", action='store', dest="config_file",
-        default=os.path.expanduser("~/.gpypi2"), help="Absolute path to a config file")
-    parser.add_argument("-i", "--index-url", action='store', dest="index_url",
-        default="http://pypi.python.org/pypi", help="Base URL for PyPi")
-    # TODO: release yolk with support to query third party PyPi
-    # TODO: test --index-url is always taken in account
+        default="/etc/gpypi2", help="Absolute path to a config file")
 
     logging_group = parser.add_mutually_exclusive_group()
     logging_group.add_argument("-q", "--quiet", action='store_true',
@@ -275,18 +281,17 @@ def main(args=sys.argv[1:]):
     # create & install options
     create_install_parser = argparse.ArgumentParser(add_help=False)
     create_install_parser.add_argument("-l", "--overlay", action='store', dest='overlay',
-        metavar='OVERLAY_NAME', default=None,
-        help='Specify overy to use by name ($OVERLAY/profiles/repo_name)')
+        metavar='OVERLAY_NAME', help=Config.allowed_options['overlay'][0])
     create_install_parser.add_argument("-o", "--overwrite", action='store_true',
-        dest="overwrite", default=False, help= "Overwrite existing ebuild.")
+        dest="overwrite", help=Config.allowed_options['overwrite'][0])
     create_install_parser.add_argument("--no-deps", action='store_true', dest="no_deps",
-        default=False, help="Don't create ebuilds for any needed dependencies.")
-    create_install_parser.add_argument("-c", "--portage-category", action='store',
-        dest="category", default="dev-python",
-        help="Specify category to use when creating ebuild. Default is dev-python")
-    create_install_parser.add_argument("-p", "--pretend", action='store_true',
-        dest="pretend", default=False, help="Print ebuild to stdout, "
-        "don't write ebuild file, don't download SRC_URI.")
+        help=Config.allowed_options['no_deps'][0])
+    create_install_parser.add_argument("-c", "--category", action='store',
+        dest="category", help=Config.allowed_options['category'][0])
+    # TODO: pretend
+    #create_install_parser.add_argument("-p", "--pretend", action='store_true',
+        #dest="pretend", default=False, help="Print ebuild to stdout, "
+        #"don't write ebuild file, don't download SRC_URI.")
 
     ## subcommands
     subparsers = main_parser.add_subparsers(title="commands", dest="command")
@@ -299,8 +304,7 @@ def main(args=sys.argv[1:]):
         description="Echo ebuild to stdout",
         parents=[parser, ebuild_parser])
     parser_echo.add_argument("--format", action='store', dest="format",
-        default='none', help="Format when printing to stdout: console, "
-        "html, bbcode, or none")
+        help=Config.allowed_options['format'][0])
 
     parser_install = subparsers.add_parser('install', help="Install ebuild and it's dependencies",
         description="Install ebuild and it's dependencies",
@@ -330,9 +334,12 @@ def main(args=sys.argv[1:]):
     if os.geteuid() != 0:
         main_parser.error('Must be run as root.')
 
+    config_mgr = ConfigManager.load_from_ini(args.config_file)
+    config_mgr.configs['argparse'] = Config.from_argparse(args)
+
     # handle command
     try:
-        CLI(args)
+        CLI(config_mgr, args.command)
     except:
         # enter pdb debugger when debugging is enabled
         if args.debug:

@@ -105,11 +105,44 @@ and most of the time one will use the :command:`pypi2 create` command::
       -p, --pretend         Print ebuild to stdout, don't write ebuild file, don't
                             download SRC_URI.
 
+.. _configuration:
+
 Configuration
 **************************
 
-:mod:`gpypi2` tries offer extendable, easy-to-setup configuration.
+.. currentmodule:: gpypi2.config
+.. highlight:: ini
 
-# TODO: from where is the config manager stuff loaded
-# TODO: what is the philosofy behind config manager and configs
-# TODO: a word about questionnaire behaviour
+:mod:`gpypi2` offers configuration based on multiple sources. Currently supported sources are: :meth:`Config.from_pypi`, :meth:`Config.from_setup_py`, :meth:`Config.from_argparse` and :meth:`Config.from_ini`.
+
+:class:`ConfigManager` is a class that handles multiple :class:`Config` instances. When a value is retrived from :class:`ConfigManager`, it is loaded from :class:`Config` instances located in :attr:`ConfigManager.configs`. Order is specified as ``use`` parameter to :class:`ConfigManager`.
+
+When :mod:`gpypi2` is first time used, it will create ``.ini`` configuration file at ``/etc/gpypi2``. Further usage will load the file with :meth:`ConfigManager.load_from_ini`. Default configuration file will look something like this::
+
+    [config]
+    # main option defaults go here:
+    # overlay = Personal
+    # ...
+
+    [config_manager]
+    # list the order of configurations
+    use = argparse ini pypi setup_py
+    # list of what options will invoke interactive questions when missing
+    questionnaire_options = overlay
+
+You will notice the ``use`` parameter in ``config_manager`` section. As already said, it specifies what :class:`Config` sources are used and in what order. ``config_manager`` section is loaded on :meth:`ConfigManager.load_from_ini` call, creating the :class:`ConfigManager` instance.
+
+``config`` section is used as ``ini`` source provider, populated by :class:`Config.from_ini` also called in :class:`ConfigManager.load_from_ini`. Another non-foobared example of configuration file::
+
+    [config]
+    format = html
+    overlay = iElectric
+    index_url = http://eggs.mycompany.com
+
+    [config_manager]
+    use = pypi ini argparse
+    questionnaire_options = uri category
+
+The last option not yet mentioned is ``questionnaire_options``. The question is, what happens when none of :class:`Config` sources provide the config value we need? The behavior is specified with ``questionnaire_options``. If configuration option is listed in ``questionnaire_options``, :class:`Questionnaire` is used to interactively request developer for input through shell. Otherwise, default is used (specified in :attr:`Config.allowed_options` tuple).
+
+List of all supported supported options can be found in :attr:`Config.allowed_options`. Most of :attr:`ConfigManager.configs` are populated in :mod:`gpypi2.cli` module.

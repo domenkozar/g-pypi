@@ -90,7 +90,7 @@ class TestConfigManager(BaseTestCase):
         self.assertRaises(GPyPiConfigurationError, ConfigManager,
             ['pypi', 'pypi', 'setup_py'])
 
-    def test_load(self):
+    def test_load_from_ini(self):
         ini_path = os.path.join(self.tmp_dir, 'ini')
 
         self.assertFalse(os.path.exists(ini_path))
@@ -100,6 +100,23 @@ class TestConfigManager(BaseTestCase):
         self.assertEqual(mgr.use, ['pypi', 'ini', 'setup_py', 'argparse'])
         self.assertEqual(mgr.questionnaire_options, ['overlay'])
 
+    def test_load_from_ini_source(self):
+        ini_path = os.path.join(self.tmp_dir, 'ini')
+        f = open(ini_path, 'w')
+        f.write("""
+[config]
+overlay = local
+category = dev-python
+
+[config_manager]
+use = ini pypi setup_py argparse
+questionnaire_options = overlay
+        """)
+        f.close()
+
+        mgr = ConfigManager.load_from_ini(ini_path)
+        self.assertEqual(2, len(mgr.configs['ini']))
+        self.assertEqual('local', mgr.overlay)
 
 class TestQuestionnaire(BaseTestCase):
     """"""

@@ -22,16 +22,18 @@
 .. sidebar:: Features
 
    * write ebuilds to overlay or stdout (formatted in ansi color, html and bbcode)
+   * install ebuilds through portage
    * use :term:`MY_P`, :term:`MY_PN`, :term:`MY_PV` when needed using Bash substitutions
-   * extract metadata from PyPi like :term:`HOMEPAGE`, :term:`DESCRIPTION`, :term:`LICENSE`, :term:`AUTHOR`, etc.
-   * determine :term:`RDEPEND` / :term:`DEPEND` from :mod:`setuptools`: `install_requires`, `tests_require`, `setup_requires` and `extras_require`
+   * extract metadata from :term:`PyPi` like :term:`HOMEPAGE`, :term:`DESCRIPTION`, :term:`LICENSE`, :term:`AUTHOR`, etc.
+   * determine :term:`RDEPEND` / :term:`DEPEND` from :mod:`setuptools`: ``install_requires``, ``tests_require``, ``setup_requires`` and ``extras_require``
    * determine :term:`PYTHON_MODNAME` from :mod:`setuptools`: `packages`, `py_modules` and `package_dir`
    * determine :term:`S` by unpacking ebuild
    * discovers :term:`DOCS` variable and/or `Sphinx documentation <http://sphinx.pocoo.org/>`_
    * discovers examples
-   * discovers :mod:`nosetests` and `setup.py test`
+   * discovers :mod:`nosetests` and ``setup.py test``
    * generates ebuilds for dependencies
    * uses Portage-alike colorful output
+   * offers :ref:`customizable configuration <configuration>`
 
 
 .. topic:: Overview

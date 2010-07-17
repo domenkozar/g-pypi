@@ -52,10 +52,6 @@ List of features that may be implemented in no particular order:
 
 * atomic actions (cleanup on traceback/error)
 
-* configuration
-
-* interactive questionaire
-
 * repoman/echangelog/metadata integration
 
 * exceptions documentation and catching exceptions in CLI
