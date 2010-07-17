@@ -9,6 +9,7 @@ import shutil
 import logging
 
 import mock
+import argparse
 
 from gpypi2.config import *
 from gpypi2.tests import *
@@ -18,21 +19,43 @@ from gpypi2.exc import *
 class TestConfig(BaseTestCase):
     """"""
 
+    def setUp(self):
+        self.tmp_dir = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.tmp_dir)
+
     def test_repr(self):
         config = Config.from_setup_py({'overlay': 'foobar'})
         self.assertEqual("<Config {'overlay': 'foobar'}>", config.__repr__())
 
     def test_from_pypyi(self):
-        pass
-
-    def test_from_ini(self):
-        pass
-
-    def test_from_argparse(self):
-        pass
+        c = Config.from_pypi({'overlay': 'foobar'})
+        self.assertEqual('foobar', c['overlay'])
 
     def test_from_setup_py(self):
-        pass
+        c = Config.from_setup_py({'overlay': 'foobar'})
+        self.assertEqual('foobar', c['overlay'])
+
+    def test_from_ini(self):
+        ini_path = os.path.join(self.tmp_dir, 'ini')
+        f = open(ini_path, 'w')
+        f.write("""
+[config]
+overlay = local
+category = dev-python
+        """)
+        f.close()
+
+        c = Config.from_ini(ini_path)
+        self.assertEqual('local', c['overlay'])
+        self.assertEqual('dev-python', c['category'])
+
+    def test_from_argparse(self):
+        parser = argparse.ArgumentParser()
+        parser.add_argument('-v', action='store', dest='overlay')
+        args = parser.parse_args(['-v', 'foobar'])
+        c = Config.from_argparse(args)
+
+        self.assertEqual('foobar', c['overlay'])
 
     def test_validate_bool(self):
         self.assertEqual(True, Config.validate('overwrite', 'y'))
