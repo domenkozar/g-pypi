@@ -16,13 +16,14 @@ from ConfigParser import SafeConfigParser
 from gpypi2.utils import asbool
 from gpypi2.exc import *
 
-
+# TODO: finish integration
+# TODO: from_* tests
 log = logging.getLogger(__name__)
 HERE = os.path.dirname(os.path.abspath(__file__))
 
 class Config(dict):
     """Holds config values retrieved from various sources. To load
-    configuration from a source use one of :metd:`from_*` methods.
+    configuration from a source use one of :meth:`from_*` methods.
     Class also defines specification for supported options in :attr:`allowed_options`.
 
     Values are retrieved with help of :meth:`Config.validator` method.
@@ -111,10 +112,8 @@ class Config(dict):
 
     @classmethod
     def validate(cls, name, value):
-        """Validates and parses config value.
-
-        :meth:`Config.validate` will dispatch calls to subvalidators based
-        on type of the config option.
+        """Validates and parses config value. Will dispatch calls to 
+        subvalidators based on type of the config option.
 
         :param name: key from :attr:`Config.allowed_options`
         :type name: string
@@ -152,14 +151,6 @@ class ConfigManager(object):
     """Holds multiple :class:`Config` instances and retrieves
     values from them.
 
-    Example::
-
-        >>> mgr = ConfigManager(['pypi', 'setup_py'])
-        >>> mgr.configs['pypi'] = (Config.from_pypi({}))
-        >>> mgr.configs['setup_py'] = (Config.from_setup_py({'overlay': 'foobar'}))
-        >>> print mgr.overlay
-        foobar
-
     :param use: Order of configuration taken in account
     :type use: list of strings
     :param questionnaire_options: What options will not use default if not
@@ -175,6 +166,14 @@ class ConfigManager(object):
         * `use` does not have unique elements
 
     :attr:`INI_TEMPLATE_PATH` -- Absolute path to .ini template file
+
+    Example::
+
+        >>> mgr = ConfigManager(['pypi', 'setup_py'])
+        >>> mgr.configs['pypi'] = (Config.from_pypi({}))
+        >>> mgr.configs['setup_py'] = (Config.from_setup_py({'overlay': 'foobar'}))
+        >>> print mgr.overlay
+        foobar
 
     """
     INI_TEMPLATE_PATH = os.path.join(HERE, 'templates', 'gpypi2.ini')
@@ -211,7 +210,16 @@ class ConfigManager(object):
         return self.default_or_question(name)
 
     def default_or_question(self, name):
-        """"""
+        """When no value is retrieved from :attr:`ConfigManager.configs`,
+        :class:`Questionnaire` is used for interactive request if ``name``
+        is in :attr:`ConfigManager.questionnaire_options`. Otherwise, default
+        is used.
+
+        :param name: Option name to be processed
+        :param type: string
+        :returns: config value
+
+        """
         if name in self.questionnaire_options:
             return self.q.ask(name)
         else:
@@ -219,7 +227,14 @@ class ConfigManager(object):
 
     @classmethod
     def load_from_ini(cls, path_to_ini, section="config_manager"):
-        """"""
+        """Load :class:`ConfigManager` from ini file. Also populates
+        ``Config.configs[ini]``.
+
+        :param path_to_ini: Filesystem path to ini file
+        :type path_to_ini: string
+        :param section: ini section to be used for :class:`ConfigManager` configuration
+        :type section: string
+        """
         if not os.path.exists(path_to_ini):
             shutil.copy(cls.INI_TEMPLATE_PATH, path_to_ini)
             log.info('Config was generated at %s', path_to_ini)
@@ -237,11 +252,22 @@ class ConfigManager(object):
 
 
 class Questionnaire(object):
-    """"""
+    """Class that handles interactive shell questions when
+    no :class:`Config` instance provides the value for requested
+    option.
+    """
     IS_FIRST_QUESTION = True
 
     def ask(self, name, input_f=raw_input):
-        """"""
+        """Ask for a config value.
+
+        :param name: Name of config option to be retrieved
+        :type name: string
+        :param input_f: function to do the asking
+        :type: input_f: function
+        :returns: Config value or if given option not valid, ask again.
+
+        """
         # TODO: colors and --nocolors
         if self.IS_FIRST_QUESTION:
             self.print_help()
@@ -258,7 +284,10 @@ class Questionnaire(object):
             return self.ask(name, input_f)
 
     def print_help(self):
-        """"""
+        """Print short description that interactive mode is turned on.
+
+        Will print only once.
+        """
         log.info("You are using interactive mode for configuration.")
         log.info("Answer questions with configuration value or press enter")
         log.info("to use default value printed in brackets.")
