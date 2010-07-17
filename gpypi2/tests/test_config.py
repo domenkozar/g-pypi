@@ -6,6 +6,7 @@
 import os 
 import tempfile
 import shutil
+import logging
 
 import mock
 
@@ -21,20 +22,26 @@ class TestConfig(BaseTestCase):
         config = Config.from_setup_py({'overlay': 'foobar'})
         self.assertEqual("<Config {'overlay': 'foobar'}>", config.__repr__())
 
+    def test_from_pypyi(self):
+        pass
+
     def test_from_ini(self):
         pass
 
     def test_from_argparse(self):
         pass
 
-    def test_validate(self):
+    def test_from_setup_py(self):
         pass
 
     def test_validate_bool(self):
-        pass
+        self.assertEqual(True, Config.validate('overwrite', 'y'))
+        self.assertRaises(GPyPiValidationError, Config.validate, 'overwrite', 'foobar')
 
     def test_validate_str(self):
-        pass
+        self.assertEqual(u'foobar', Config.validate('uri', 'foobar'))
+        self.assertEqual(u'foobar', Config.validate('uri', u'foobar'))
+        self.assertRaises(GPyPiValidationError, Config.validate, 'uri', True)
 
 
 class TestConfigManager(BaseTestCase):
@@ -97,8 +104,26 @@ class TestConfigManager(BaseTestCase):
 class TestQuestionnaire(BaseTestCase):
     """"""
 
+    def setUp(self):
+        self.handler = ListHandler()
+        logging.getLogger().addHandler(self.handler)
+        self.q = Questionnaire()
+
+    def test_ask(self):
+        self.assertEqual(u'foobar', self.q.ask('overlay', lambda x: 'foobar'))
+
     def test_print_help(self):
-        pass
+        self.assertEqual(0, len(self.handler.info))
+        self.q.ask('overlay', lambda x: 'foobar')
+        self.assertEqual(3, len(self.handler.info))
+        self.q.ask('overlay', lambda x: 'foobar')
+        self.assertEqual(3, len(self.handler.info))
 
     def test_error_handling(self):
-        pass
+        answer = iter(['foobar', 'y'])
+        self.assertEqual(True, self.q.ask('no_deps', lambda x: answer.next()))
+        self.assertTrue('Not a boolean' in self.handler.error[0])
+        self.assertTrue('foobar' in self.handler.error[0])
+
+    def test_use_default(self):
+        self.assertEqual(u'none', self.q.ask('format', lambda x: ''))

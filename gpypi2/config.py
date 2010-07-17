@@ -84,11 +84,12 @@ class Config(dict):
     @classmethod
     def validate(cls, name, value):
         """"""
-        validator = self.allowed_options[name][1]
+        validator = cls.allowed_options[name][1]
         if isinstance(validator, type):
-            return getattr(cls, 'validate_%s' % validator.__name__)
+            f = getattr(cls, 'validate_%s' % validator.__name__)
         else:
-            return getattr(cls, 'validate_%s' % validator)
+            f = getattr(cls, 'validate_%s' % validator)
+        return f(value)
 
     @classmethod
     def validate_bool(cls, value):
@@ -96,13 +97,13 @@ class Config(dict):
         try:
             return asbool(value)
         except ValueError:
-            raise GPyPiValidationError("Not a boolean, try y/n: %r" % value)
+            raise GPyPiValidationError("Not a boolean (write y/n): %r" % value)
 
     @classmethod
     def validate_str(cls, value):
         """"""
         if isinstance(value, basestring):
-            if isinstance(value, string):
+            if isinstance(value, str):
                 value = unicode(value, 'utf-8')
             return value
         else:
@@ -202,7 +203,9 @@ class Questionnaire(object):
     def ask(self, name, input_f=raw_input):
         """"""
         # TODO: colors and --nocolors
-        self.print_help()
+        if self.IS_FIRST_QUESTION:
+            self.print_help()
+
         option = Config.allowed_options[name]
         answer = input_f("%s [%r]: " % (option[0].title(), option[2]))
         if not answer:
@@ -212,13 +215,10 @@ class Questionnaire(object):
             return Config.validate(name, answer)
         except GPyPiValidationError, e:
             log.error(e)
-            return self.ask(name)
+            return self.ask(name, input_f)
 
     def print_help(self):
         """"""
-        if not self.IS_FIRST_QUESTION:
-            return
-
         log.info("You are using interactive mode for configuration.")
         log.info("Answer questions with configuration value or press enter")
         log.info("to use default value printed in brackets.")

@@ -33,3 +33,6 @@ class GPyPiOverlayDoesNotExist(GPyPiException):
 
 class GPyPiConfigurationError(GPyPiException):
     """"""
+
+class GPyPiValidationError(GPyPiException):
+    """"""
