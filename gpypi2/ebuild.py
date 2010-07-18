@@ -89,7 +89,6 @@ class Ebuild(dict):
             'up_pv': up_pv,
             'download_url': download_url,
             'category': '',
-            'need_python': '',
             'python_modname': '',
             'description': '',
             'homepage': set(),
@@ -476,7 +475,7 @@ class Ebuild(dict):
         """
         # Use command-line overlay if specified, else the one in .g-pyprc
         # TODO: change overlay default
-        overlay_name = self.options.overlay or 'local'
+        overlay_name = self.options.overlay
         overlay_path = PortageUtils.get_overlay_path(overlay_name)
 
         # create path to ebuild

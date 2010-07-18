@@ -16,8 +16,6 @@ from ConfigParser import SafeConfigParser
 from gpypi2.utils import asbool
 from gpypi2.exc import *
 
-# TODO: finish integration
-# TODO: from_* tests
 log = logging.getLogger(__name__)
 HERE = os.path.dirname(os.path.abspath(__file__))
 
