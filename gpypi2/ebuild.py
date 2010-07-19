@@ -125,7 +125,7 @@ class Ebuild(dict):
                 self.metadata[new_key] = value
         else:
             log.error("No metadata.")
-        self.options['pypi'] = self.metadata
+        self.options.configs['pypi'] = self.metadata
 
     def set_ebuild_vars(self, download_url):
         """Calls :meth:`gpypi2.enamer.Enamer.get_vars` and

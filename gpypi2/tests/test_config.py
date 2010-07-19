@@ -120,8 +120,8 @@ class TestConfigManager(BaseTestCase):
         mgr = ConfigManager.load_from_ini(ini_path)
         self.assertTrue(os.path.exists(ini_path))
 
-        self.assertEqual(mgr.use, ['pypi', 'ini', 'setup_py', 'argparse'])
-        self.assertEqual(mgr.questionnaire_options, ['overlay'])
+        self.assertEqual(mgr.use, ['argparse', 'pypi', 'ini', 'setup_py'])
+        self.assertEqual(mgr.questionnaire_options, ['overlay', 'uri', 'package', 'version'])
 
     def test_load_from_ini_source(self):
         ini_path = os.path.join(self.tmp_dir, 'ini')
@@ -147,7 +147,9 @@ class TestQuestionnaire(BaseTestCase):
     def setUp(self):
         self.handler = ListHandler()
         logging.getLogger().addHandler(self.handler)
-        self.q = Questionnaire()
+        config = ConfigManager(['ini'])
+        config.configs['ini'] = {}
+        self.q = Questionnaire(config)
 
     def test_ask(self):
         self.assertEqual(u'foobar', self.q.ask('overlay', lambda x: 'foobar'))

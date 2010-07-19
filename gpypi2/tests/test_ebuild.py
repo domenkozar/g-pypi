@@ -8,10 +8,9 @@ import unittest2
 import tempfile
 import shutil
 
-from argparse import Namespace
-
 from gpypi2 import portage_utils
 from gpypi2.ebuild import *
+from gpypi2.config import *
 from gpypi2.tests import *
 from gpypi2.exc import *
 
@@ -36,8 +35,9 @@ class TestEbuild(BaseTestCase):
         # monkey patch portage environment
         portage_utils.ENV['PORTDIR_OVERLAY'] += ' %s' % self.overlay_dir
 
-        options = Namespace(overwrite=False, overlay='gpypi-tests')
-        self.ebuild_args = ('foobar', '1.0', '', options)
+        config = ConfigManager(['ini'])
+        config.configs['ini'] = dict(overwrite=False, overlay='gpypi-tests')
+        self.ebuild_args = ('foobar', '1.0', '', config)
         self.ebuild = Ebuild(*self.ebuild_args)
         self.ebuild.unpacked_dir = self.s
 
@@ -125,12 +125,10 @@ class TestEbuild(BaseTestCase):
     def test_set_metadata_empty(self):
         self.ebuild.set_metadata({})
         self.assertEqual(self.ebuild.metadata, {})
-        self.assertEqual(self.ebuild['category'], 'dev-python')
 
     def test_set_metadata(self):
         self.ebuild.set_metadata({'Home-Page': 'foobar', 'License_': 'bar'})
         self.assertEqual(self.ebuild.metadata, {'homepage': 'foobar', 'license': 'bar'})
-        self.assertEqual(self.ebuild['category'], 'dev-python')
 
     @unittest2.expectedFailure
     def test_set_ebuild_vars(self):

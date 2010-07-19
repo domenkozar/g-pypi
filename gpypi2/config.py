@@ -280,7 +280,7 @@ class Questionnaire(object):
             self.print_help()
 
         # TODO: integrate in logging
-        if self.options.nocolor:
+        if self.options.nocolors:
             msg = "%s [%r]: "
         else:
             msg = colorize("GOOD", " * ") + "%s" + colorize("BRACKET", " [")\
