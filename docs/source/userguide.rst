@@ -115,9 +115,20 @@ Configuration
 
 :mod:`gpypi2` offers configuration based on multiple sources. Currently supported sources are: :meth:`Config.from_pypi`, :meth:`Config.from_setup_py`, :meth:`Config.from_argparse` and :meth:`Config.from_ini`.
 
-:class:`ConfigManager` is a class that handles multiple :class:`Config` instances. When a value is retrived from :class:`ConfigManager`, it is loaded from :class:`Config` instances located in :attr:`ConfigManager.configs`. Order is specified as ``use`` parameter to :class:`ConfigManager`.
+Configuration API let's you choose what soure is used and what priority does it have relative to other source providers. Here is a complete list of supported configuration options that :class:`Config` can provide:
+
+.. literalinclude:: ../../gpypi2/config.py
+    :language: python
+    :start-after: allowed_options = {
+    :end-before: }
+
+:class:`Config` is basically a `dict` with few additional classmethods for validation and source processing. Each :class:`Config` represents configuration values retrieved from specific source.
+
+:class:`ConfigManager` is a class that handles multiple :class:`Config` instances. When a value is retrived from :class:`ConfigManager`, it is loaded from :class:`Config` instances located in :attr:`ConfigManager.configs` `(dict)`. Order is specified as ``use`` parameter to :class:`ConfigManager`.
+
 
 When :mod:`gpypi2` is first time used, it will create ``.ini`` configuration file at ``/etc/gpypi2``. Further usage will load the file with :meth:`ConfigManager.load_from_ini`. Default configuration file will look something like this::
+
 
     [config]
     # main option defaults go here:
@@ -145,4 +156,8 @@ You will notice the ``use`` parameter in ``config_manager`` section. As already 
 
 The last option not yet mentioned is ``questionnaire_options``. The question is, what happens when none of :class:`Config` sources provide the config value we need? The behavior is specified with ``questionnaire_options``. If configuration option is listed in ``questionnaire_options``, :class:`Questionnaire` is used to interactively request developer for input through shell. Otherwise, default is used (specified in :attr:`Config.allowed_options` tuple).
 
-List of all supported supported options can be found in :attr:`Config.allowed_options`. Most of :attr:`ConfigManager.configs` are populated in :mod:`gpypi2.cli` module.
+Most of :attr:`ConfigManager.configs` are populated in :mod:`gpypi2.cli` module.
+
+.. note::
+    
+    For example usage of classes, following linked API definition.

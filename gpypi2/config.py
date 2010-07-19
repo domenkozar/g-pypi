@@ -40,6 +40,7 @@ class Config(dict):
     """
 
     allowed_options = {
+        # 'config_name': ("doc", "type", "default_value"),
         'pn': ('Specify PN to use when naming ebuild', str, False),
         'pv': ('Specify PV to use when naming ebuild', str, False),
         'my_pv': ('Specify MY_PV used in ebuild', str, False),
