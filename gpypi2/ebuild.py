@@ -37,7 +37,6 @@ from gpypi2.portage_utils import PortageUtils
 from gpypi2.enamer import Enamer
 from gpypi2.exc import *
 from gpypi2 import utils
-#from g_pypi.config import MyConfig
 
 
 log = logging.getLogger(__name__)
@@ -60,6 +59,8 @@ class Ebuild(dict):
 
     :attr:`EBUILD_TEMPLATE` -- Template name
 
+    :attr:`requires` -- set of packages that this ebuild depends on
+
     """
     # TODO: __init__ attrs
     DOC_DIRS = ['doc', 'docs', 'documentation']
@@ -72,7 +73,7 @@ class Ebuild(dict):
         self.setup_keywords = {}
         self.metadata = {}
         self.unpacked_dir = None
-        self.ebuild_path = ""
+        self.ebuild_path = None
         self.requires = set()
         self.has_tests = None
         self.options = options
@@ -84,11 +85,12 @@ class Ebuild(dict):
             #self.add_inherit("subversion")
 
         # Variables that will be passed to the Jinja template
+        # TODO: move properties into Config
+        # TODO: implement setup_py provider
         d = {
             'up_pn': up_pn,
             'up_pv': up_pv,
             'download_url': download_url,
-            'category': '',
             'python_modname': '',
             'description': '',
             'homepage': set(),
@@ -108,13 +110,14 @@ class Ebuild(dict):
         self.set_ebuild_vars(download_url)
 
     def __repr__(self):
-        return '<Ebuild (%s)>' % pformat(dict(self))
+        return '<Ebuild (%s)>' % pformat(dict.__repr__(self))
 
     def set_metadata(self, metadata):
         """Set metadata.
 
         :param metadata: Meta information about ebuild
         :type metadata: dict
+
         """
         if metadata:
             for key, value in metadata.iteritems():
@@ -122,8 +125,7 @@ class Ebuild(dict):
                 self.metadata[new_key] = value
         else:
             log.error("No metadata.")
-
-        self['category'] = Enamer.convert_category(self['up_pn'], self.metadata)
+        self.options['pypi'] = self.metadata
 
     def set_ebuild_vars(self, download_url):
         """Calls :meth:`gpypi2.enamer.Enamer.get_vars` and
@@ -245,7 +247,7 @@ class Ebuild(dict):
         # check dependency on setuptools
         with open(setup_file) as f:
             contents = f.read()
-            if 'setuptools' or 'pkg_resources' in contents:
+            if ('setuptools' in contents) or ('pkg_resources' in contents):
                 self.add_depend('dev-python/setuptools')
                 self.add_rdepend('dev-python/setuptools')
 
@@ -282,8 +284,10 @@ class Ebuild(dict):
 
         for req in requirements:
             extras = req.extras
-            category = Enamer.convert_category(req.project_name, {})
+            # TODO: extend configuration to support callable configs
             # TODO: pass metadata from the project_name
+            #category = Enamer.convert_category(req.project_name, {})
+            category = self.options.category
             pn = Enamer.parse_pn(req.project_name)[0] or req.project_name
 
             # add setuptools dependency for later dependency generating
@@ -374,7 +378,7 @@ class Ebuild(dict):
         """
         # TODO: deep introspection
         # TODO: add support for sphinx
-        # TODO: better handling of DOCS
+        # TODO: remove the DOCS searching, already handles by portage
 
         for ddir in self.DOC_DIRS:
             if os.path.exists(os.path.join(self.unpacked_dir, ddir)):
@@ -405,13 +409,13 @@ class Ebuild(dict):
     def update_with_s(self):
         """Add ${:term:`S`} to ebuild if needed."""
         log.debug("Trying to determine ${S}, unpacking...")
-        unpacked_dir = PortageUtils.find_s_dir(self['p'], self['category'])
+        unpacked_dir = PortageUtils.find_s_dir(self['p'], self.options.category)
         if unpacked_dir == "":
             self["s"] = "${WORKDIR}"
             return
 
         self.unpacked_dir = os.path.join(PortageUtils.get_workdir(self['p'],
-            self['category']), unpacked_dir)
+            self.options.category), unpacked_dir)
 
         if self.get('my_p', None):
             self["s"] = "${WORKDIR}/${MY_P}"
@@ -434,13 +438,9 @@ class Ebuild(dict):
     def print_formatted(self):
         """Print formatted ebuild
         """
-        # TODO: config for category, format and background
         formatting = self.options.format
-        #background = self.config['background']
+        background = self.options.background
 
-        # TODO: configurator
-        self.options.overwrite=True
-        self.options.overlay=False
         self.create()
 
         self.show_warnings()
@@ -448,7 +448,7 @@ class Ebuild(dict):
             print self.output
         else:
             # use pygments to print ebuild
-            formatter = get_formatter_by_name(formatting)
+            formatter = get_formatter_by_name(formatting, background=background)
             print highlight(self.output, BashLexer(), formatter)
 
     def create(self):
@@ -474,11 +474,11 @@ class Ebuild(dict):
         """Write ebuild file
         """
         # Use command-line overlay if specified, else the one in .g-pyprc
-        # TODO: change overlay default
         overlay_name = self.options.overlay
         overlay_path = PortageUtils.get_overlay_path(overlay_name)
 
         # create path to ebuild
+        # TODO: create fake overlay in /tmp/ when echoing ebuild
         ebuild_dir = PortageUtils.make_ebuild_dir(self['category'], self['pn'],
                 overlay_path)
         if not ebuild_dir:
@@ -490,7 +490,7 @@ class Ebuild(dict):
         log.debug('Ebuild.write: build_path(%s)', self.ebuild_path)
 
         # see if we want to overwrite
-        if os.path.exists(self.ebuild_path) and not overwrite:
+        if (not self.options.command == 'echo') or os.path.exists(self.ebuild_path) and not overwrite:
             log.warn("Ebuild exists (use -o to overwrite), skipping: %s" % self.ebuild_path)
             return False
 

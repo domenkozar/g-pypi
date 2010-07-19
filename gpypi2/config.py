@@ -13,6 +13,8 @@ import shutil
 import logging
 from ConfigParser import SafeConfigParser
 
+from portage.output import colorize
+
 from gpypi2.utils import asbool
 from gpypi2.exc import *
 
@@ -43,13 +45,18 @@ class Config(dict):
         'my_pv': ('Specify MY_PV used in ebuild', str, False),
         'my_pn': ('Specify MY_PN used in ebuild', str, False),
         'my_p': ('Specify MY_P used in ebuild', str, False),
-        'uri': ('Specify SRC_URI of the package', str, False),
+        'uri': ('Specify SRC_URI of the package', str, ""),
         'index_url': ('Base URL for PyPi', str, "http://pypi.python.org/pypi"),
         'overlay': ('Specify overlay to use by name (stored in $OVERLAY/profiles/repo_name)', str, "local"),
         'overwrite': ('Overwrite existing ebuild', bool, False),
         'no_deps': ("Don't create ebuilds for any needed dependencies", bool, False),
         'category': ("Specify portage category to use when creating ebuild", str, "dev-python"),
         'format': ("Format when printing to stdout (use pygments identifier)", str, "none"),
+        'package': ("Package name for ebuild actions", str, None),
+        'version': ("Package version for ebuild actions", str, None),
+        'command': ("Name of command that was invoked on CLI", str, None),
+        'nocolors': ("Disable colorful output", bool, False),
+        'background': ("Background of terminal when using formatting", str, 'dark')
     }
 
     def __repr__(self):
@@ -183,7 +190,7 @@ class ConfigManager(object):
                     ", config order has non-unique member: %s" % config)
         self.use = use
         self.questionnaire_options =  questionnaire_options or []
-        self.q = (questionnaire_class or Questionnaire)()
+        self.q = (questionnaire_class or Questionnaire)(self)
         self.configs = {}
 
     def __repr__(self):
@@ -256,6 +263,9 @@ class Questionnaire(object):
     """
     IS_FIRST_QUESTION = True
 
+    def __init__(self, options):
+        self.options = options
+
     def ask(self, name, input_f=raw_input):
         """Ask for a config value.
 
@@ -266,14 +276,18 @@ class Questionnaire(object):
         :returns: Config value or if given option not valid, ask again.
 
         """
-        # TODO: colors and --nocolors
         if self.IS_FIRST_QUESTION:
             self.print_help()
 
+        # TODO: integrate in logging
+        if self.options.nocolor:
+            msg = "%s [%r]: "
+        else:
+            msg = colorize("GOOD", " * ") + "%s" + colorize("BRACKET", " [")\
+                + "%r" + colorize("BRACKET", ']') + ": "
+
         option = Config.allowed_options[name]
-        answer = input_f("%s [%r]: " % (option[0].title(), option[2]))
-        if not answer:
-            answer = option[2]
+        answer = input_f(msg % (option[0].title(), option[2])) or option[2]
 
         try:
             return Config.validate(name, answer)

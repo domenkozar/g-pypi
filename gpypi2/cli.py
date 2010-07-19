@@ -210,9 +210,9 @@ class CLI(object):
 
     """
 
-    def __init__(self, config, command):
+    def __init__(self, config):
         self.config = config
-        getattr(self, command)()
+        getattr(self, config.command)()
 
     def create(self):
         """"""
@@ -231,6 +231,22 @@ class CLI(object):
         gpypi = GPyPI(self.config.package, self.config.version, self.config)
         gpypi.do_ebuild()
         # TODO: cleanup
+
+    def pypi(self):
+        """"""
+        pypi = CheeseShop()
+        all_packages = []
+        for package in pypi.list_packages():
+            (pn, vers) = pypi.query_versions_pypi(package)
+            for version in vers:
+                # TODO if pacakage already exist, continue;
+                try:
+                    url = pypi.get_download_urls(pn, version)[0]
+                except IndexError:
+                    pass
+                    # TODO: log how many packages do not have URL
+                else:
+                    self.all_packages.append((pn, version))
 
 
 def main(args=sys.argv[1:]):
@@ -263,7 +279,7 @@ def main(args=sys.argv[1:]):
     # TODO: release yolk with support to query third party PyPi
     # TODO: test --index-url is always taken in account
     parser.add_argument('--nocolors', action='store_true', dest='nocolors',
-        default=False, help="Disable colorful output")
+        help=Config.allowed_options['nocolors'][0])
     parser.add_argument("--config-file", action='store', dest="config_file",
         default="/etc/gpypi2", help="Absolute path to a config file")
 
@@ -310,6 +326,10 @@ def main(args=sys.argv[1:]):
         description="Install ebuild and it's dependencies",
         parents=[parser, ebuild_parser, create_install_parser])
 
+    parser_pypi = subparsers.add_parser('pypi', help="Populate all packages from pypi into an overlay",
+        description="Populate all packages from pypi into an overlay",
+        parents=[parser, create_install_parser])
+
     args = main_parser.parse_args(args)
 
     # TODO: configurable logging
@@ -339,7 +359,7 @@ def main(args=sys.argv[1:]):
 
     # handle command
     try:
-        CLI(config_mgr, args.command)
+        CLI(config_mgr)
     except:
         # enter pdb debugger when debugging is enabled
         if args.debug:
