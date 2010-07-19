@@ -41,7 +41,7 @@ Getting started
 ***************
 
 :command:`gpypi2` is a command line tool with vision to make
-Gentoo developers life easier. To create an ebuild and it's dependencies::
+Gentoo developers life easier. To create an ebuild and its dependencies::
 
     $ sudo gpypi2 create --overlay sunrise pylons
     * Generating ebuild: Jinja2 2.5
@@ -57,7 +57,7 @@ Gentoo developers life easier. To create an ebuild and it's dependencies::
     
     Root login must be used for populating overlays and unpacking ebuilds.
 
-Usage should be pretty self explainatory through help::
+Usage should be pretty self explanatory through help::
 
     $ sudo gpypi2 -h
     usage: gpypi2 [-h] {create,echo} ...
@@ -115,7 +115,7 @@ Configuration
 
 :mod:`gpypi2` offers configuration based on multiple sources. Currently supported sources are: :meth:`Config.from_pypi`, :meth:`Config.from_setup_py`, :meth:`Config.from_argparse` and :meth:`Config.from_ini`.
 
-Configuration API let's you choose what soure is used and what priority does it have relative to other source providers. Here is a complete list of supported configuration options that :class:`Config` can provide:
+Configuration API lets you choose what source is used and what priority it has relative to other source providers. Here is a complete list of supported configuration options that :class:`Config` can provide:
 
 .. literalinclude:: ../../gpypi2/config.py
     :language: python
@@ -124,7 +124,7 @@ Configuration API let's you choose what soure is used and what priority does it 
 
 :class:`Config` is basically a `dict` with few additional classmethods for validation and source processing. Each :class:`Config` represents configuration values retrieved from specific source.
 
-:class:`ConfigManager` is a class that handles multiple :class:`Config` instances. When a value is retrived from :class:`ConfigManager`, it is loaded from :class:`Config` instances located in :attr:`ConfigManager.configs` `(dict)`. Order is specified as ``use`` parameter to :class:`ConfigManager`.
+:class:`ConfigManager` is a class that handles multiple :class:`Config` instances. When a value is retrieved from :class:`ConfigManager`, it is loaded from :class:`Config` instances located in :attr:`ConfigManager.configs` `(dict)`. Order is specified as ``use`` parameter to :class:`ConfigManager`.
 
 
 When :mod:`gpypi2` is first time used, it will create ``.ini`` configuration file at ``/etc/gpypi2``. Further usage will load the file with :meth:`ConfigManager.load_from_ini`. Default configuration file will look something like this::

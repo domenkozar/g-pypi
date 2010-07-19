@@ -59,6 +59,7 @@ class Config(dict):
         'nocolors': ("Disable colorful output", bool, False),
         'background': ("Background of terminal when using formatting", str, 'dark')
     }
+    # TODO: package and version: duplicate
 
     def __repr__(self):
         return "<Config %s>" % dict.__repr__(self)
