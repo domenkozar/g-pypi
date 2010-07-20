@@ -233,7 +233,7 @@ class CLI(object):
         gpypi.do_ebuild()
         # TODO: cleanup
 
-    def pypi(self):
+    def sync(self):
         """"""
         pypi = CheeseShop()
         all_packages = []
@@ -340,7 +340,7 @@ def main(args=sys.argv[1:]):
         description="Install ebuild and it's dependencies",
         parents=[parser, ebuild_parser, create_install_parser])
 
-    parser_pypi = subparsers.add_parser('pypi', help="Populate all packages from pypi into an overlay",
+    parser_pypi = subparsers.add_parser('sync', help="Populate all packages from pypi into an overlay",
         description="Populate all packages from pypi into an overlay",
         parents=[parser, create_install_parser])
 
