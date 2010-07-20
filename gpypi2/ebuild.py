@@ -479,18 +479,18 @@ class Ebuild(dict):
 
         # create path to ebuild
         # TODO: create fake overlay in /tmp/ when echoing ebuild
-        ebuild_dir = PortageUtils.make_ebuild_dir(self['category'], self['pn'],
+        ebuild_dir = PortageUtils.make_ebuild_dir(self.options.category, self['pn'],
                 overlay_path)
         if not ebuild_dir:
             # TODO: raise exception
-            log.error("Couldn't create overylay ebuild directory.")
+            log.error("Couldn't create overlay ebuild directory.")
 
         # get ebuild path
         self.ebuild_path = os.path.join(ebuild_dir, self['p'] + ".ebuild")
         log.debug('Ebuild.write: build_path(%s)', self.ebuild_path)
 
         # see if we want to overwrite
-        if (not self.options.command == 'echo') or os.path.exists(self.ebuild_path) and not overwrite:
+        if (not self.options.command == 'echo') and os.path.exists(self.ebuild_path) and not overwrite:
             log.warn("Ebuild exists (use -o to overwrite), skipping: %s" % self.ebuild_path)
             return False
 

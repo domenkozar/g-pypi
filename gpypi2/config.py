@@ -57,7 +57,8 @@ class Config(dict):
         'version': ("Package version for ebuild actions", str, None),
         'command': ("Name of command that was invoked on CLI", str, None),
         'nocolors': ("Disable colorful output", bool, False),
-        'background': ("Background of terminal when using formatting", str, 'dark')
+        'background': ("Background of terminal when using formatting", str, 'dark'),
+        'pretend': ("Print ebuild to stdout, don't write ebuild file, don't download SRC_URI", bool, False),
     }
     # TODO: package and version: duplicate
 

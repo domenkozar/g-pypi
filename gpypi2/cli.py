@@ -69,8 +69,8 @@ class GPyPI(object):
                     else:
                         self.handle_dependencies(req.project_name)
             # TODO: disable some options after first ebuild is created
-            self.options.overwrite = False
-            self.options.category = None
+            #self.options.overwrite = False
+            #self.options.category = None
 
     def handle_dependencies(self, project_name):
         """Add dependency if not already in self.tree"""
@@ -218,6 +218,7 @@ class CLI(object):
         """"""
         gpypi = GPyPI(self.config.package, self.config.version, self.config)
         gpypi.create_ebuilds()
+        # TODO: atomic cleanup
 
     def install(self):
         """"""
@@ -239,14 +240,27 @@ class CLI(object):
         for package in pypi.list_packages():
             (pn, vers) = pypi.query_versions_pypi(package)
             for version in vers:
-                # TODO if pacakage already exist, continue;
+                # TODO: parse_* will not return anything for correct atoms
+                atom = Enamer.construct_atom(Enamer.parse_pn(pn)[0], self.config.category, Enamer.parse_pv(version[0]))
+
+                # we skip existing ebuilds
+                if PortageUtils.ebuild_exists(atom):
+                    continue
                 try:
                     url = pypi.get_download_urls(pn, version)[0]
+                    # TODO: use setuptools way also
                 except IndexError:
-                    pass
-                    # TODO: log how many packages do not have URL
+                    log.warn('Skipping %s, no download url', atom)
                 else:
-                    self.all_packages.append((pn, version))
+                    try:
+                        gpypi = GPyPI(pn, version, self.config)
+                        gpypi.create_ebuilds()
+                    except GPyPiException, e:
+                        log.warn(e)
+                    except KeyboardInterrupt:
+                        raise
+                    except:
+                        log.exception('Unexpected error occured during ebuild creation:')
 
 
 def main(args=sys.argv[1:]):

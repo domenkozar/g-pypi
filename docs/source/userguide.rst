@@ -122,6 +122,8 @@ Configuration API lets you choose what source is used and what priority it has r
     :start-after: allowed_options = {
     :end-before: }
 
+.. todo:: write a reST table
+
 :class:`Config` is basically a `dict` with few additional classmethods for validation and source processing. Each :class:`Config` represents configuration values retrieved from specific source.
 
 :class:`ConfigManager` is a class that handles multiple :class:`Config` instances. When a value is retrieved from :class:`ConfigManager`, it is loaded from :class:`Config` instances located in :attr:`ConfigManager.configs` `(dict)`. Order is specified as ``use`` parameter to :class:`ConfigManager`.
