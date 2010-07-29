@@ -100,6 +100,7 @@ class TestConfigManager(BaseTestCase):
         self.mgr.category
 
         self.assertEqual([('ask', ('category',), {})], self.mgr.q.method_calls)
+        self.assertEqual(1, self.mgr.q.ask.call_count)
 
     def test_non_existent_option(self):
         self.mgr.configs['pypi'] = Config.from_pypi({})
@@ -115,13 +116,28 @@ class TestConfigManager(BaseTestCase):
 
     def test_load_from_ini(self):
         ini_path = os.path.join(self.tmp_dir, 'ini')
+        f = open(ini_path, 'w')
+        f.write("""
+[config]
 
-        self.assertFalse(os.path.exists(ini_path))
+[config_manager]
+use = argparse pypi ini setup_py
+questionnaire_options = overlay uri package version
+        """)
+        f.close()
+
+        self.assertTrue(os.path.exists(ini_path))
         mgr = ConfigManager.load_from_ini(ini_path)
         self.assertTrue(os.path.exists(ini_path))
 
         self.assertEqual(mgr.use, ['argparse', 'pypi', 'ini', 'setup_py'])
         self.assertEqual(mgr.questionnaire_options, ['overlay', 'uri', 'package', 'version'])
+
+    def test_create_ini(self):
+        ini_path = os.path.join(self.tmp_dir, 'ini')
+        self.assertFalse(os.path.exists(ini_path))
+        ConfigManager.load_from_ini(ini_path)
+        self.assertTrue(os.path.exists(ini_path))
 
     def test_load_from_ini_source(self):
         ini_path = os.path.join(self.tmp_dir, 'ini')

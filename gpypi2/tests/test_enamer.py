@@ -63,10 +63,11 @@ class TestEnamer(BaseTestCase):
 
     def test_convert_license(self):
         """Convert classifier license to known portage license"""
-        self.assertEqual(Enamer.convert_license("License :: OSI Approved :: Zope Public License"), "ZPL")
-        self.assertEqual(Enamer.convert_license("License :: OSI Approved :: GNU Library or Lesser General Public License (LGPL)"),  "LGPL-2.1")
-        self.assertEqual(Enamer.convert_license("License :: Public Domain"), "public-domain")
-        self.assertEqual(Enamer.convert_license(""), "")
+        self.assertEqual(Enamer.convert_license(["License :: OSI Approved :: Zope Public License"]), "ZPL")
+        self.assertEqual(Enamer.convert_license(["License :: OSI Approved :: GNU Library or Lesser General Public License (LGPL)"]),  "LGPL-2.1")
+        self.assertEqual(Enamer.convert_license(["License :: Public Domain"]), "public-domain")
+        self.assertEqual(Enamer.convert_license([]), "")
+        self.assertEqual(Enamer.convert_license([], 'GPL alike'), 'GPL-2')
 
     def test_is_valid_license(self):
         """Check if license string matches a valid one in ${PORTDIR}/licenses"""

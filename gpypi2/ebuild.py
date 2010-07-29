@@ -23,6 +23,7 @@ import os
 import logging
 from pprint import pformat
 from datetime import date
+import distutils.core
 
 from jinja2 import Environment, PackageLoader
 from pygments import highlight
@@ -30,7 +31,6 @@ from pygments.lexers import BashLexer
 from pygments.formatters import get_formatter_by_name
 from pkg_resources import parse_requirements
 import setuptools
-import distutils.core
 
 from gpypi2 import __version__
 from gpypi2.portage_utils import PortageUtils
@@ -42,16 +42,12 @@ from gpypi2 import utils
 log = logging.getLogger(__name__)
 
 
-# TODO: dependency can ge a string or list of strings
+# TODO: dependency can be a string or list of strings
 class Ebuild(dict):
     """Contains, populates and renders an ebuild.
 
-    :param up_pn: Upstream package name
-    :param up_pv: Upstream package version
-    :param download_url: Download link for a package
-    :type up_pn: string
-    :type up_pv: string
-    :type download_url: string
+    :param options: Configuration for ebuild
+    :type options: :class:`gpypi2.config.ConfigManager` instance
 
     :attr:`DOC_DIRS` -- Possible locations for documentation
 
@@ -68,8 +64,7 @@ class Ebuild(dict):
     EBUILD_TEMPLATE = 'ebuild.jinja'
     EBUILD_TEMPLATE_PACKAGE = 'gpypi2'
 
-    def __init__(self, up_pn, up_pv, download_url, options):
-        self.metadata = None
+    def __init__(self, options):
         self.setup_keywords = {}
         self.metadata = {}
         self.unpacked_dir = None
@@ -78,22 +73,15 @@ class Ebuild(dict):
         self.has_tests = None
         self.options = options
 
-        # TODO: implement support for SCM download urls
-        #if self.options.subversion:
-            #self.options.pv = "9999"
-            #self.vars['esvn_repo_uri'] = download_url
-            #self.add_inherit("subversion")
+        # init stuff
+        self.env = Environment(
+            loader=PackageLoader(self.EBUILD_TEMPLATE_PACKAGE, 'templates'),
+            trim_blocks=True)
+        self.template = self.env.get_template(self.EBUILD_TEMPLATE)
 
         # Variables that will be passed to the Jinja template
-        # TODO: move properties into Config
-        # TODO: implement setup_py provider
         d = {
-            'up_pn': up_pn,
-            'up_pv': up_pv,
-            'download_url': download_url,
-            'python_modname': '',
-            'description': '',
-            'homepage': set(),
+            'python_modname': None,
             'rdepend': set(),
             'depend': set(),
             'use': set(),
@@ -104,39 +92,39 @@ class Ebuild(dict):
             'inherit': set(['distutils']),
             'gpypi_version': __version__,
             'year': date.today().year,
-            'keywords': PortageUtils.get_keyword() or '',
+            'keywords': PortageUtils.get_keyword(),
         }
         super(Ebuild, self).__init__(d)
-        self.set_ebuild_vars(download_url)
+        # TODO: use Config rather
+        self.options.configs['setup_py'] = self
+        self.set_ebuild_vars()
 
     def __repr__(self):
         return '<Ebuild (%s)>' % pformat(dict.__repr__(self))
 
     def set_metadata(self, metadata):
-        """Set metadata.
+        """Set metadata from :term:`PyPi`.
 
         :param metadata: Meta information about ebuild
         :type metadata: dict
 
         """
-        if metadata:
+        d = {}
+        if metadata and 'pypi' in self.options.use:
             for key, value in metadata.iteritems():
                 new_key = key.lower().replace('-', '').replace('_', '')
-                self.metadata[new_key] = value
+                d[new_key] = value
+            self.update(d)
+            self.parse_metadata()
         else:
-            log.error("No metadata.")
-        self.options.configs['pypi'] = self.metadata
+            log.error("No metadata or pypi configuration is disabled.")
 
-    def set_ebuild_vars(self, download_url):
+    def set_ebuild_vars(self):
         """Calls :meth:`gpypi2.enamer.Enamer.get_vars` and
         updates instance variables.
 
-        :param download_url: Download link for a package
-        :type download_url: string
-
         """
-        # TODO: add possibility to override pn, pv, my_pn, my_pv
-        d = Enamer.get_vars(download_url, self['up_pn'], self['up_pv'])
+        d = Enamer.get_vars(self.options.uri, self.options.up_pn, self.options.up_pv)
         self.update(d)
 
         if filter(None, [src_uri.lower().endswith('.zip') for src_uri in self['src_uri']]):
@@ -144,36 +132,24 @@ class Ebuild(dict):
 
     def parse_metadata(self):
         """Extract :term:`DESCRIPTION`, :term:`HOMEPAGE`,
-        :term:`LICENSE` ebuild variables from metadata.
+        :term:`LICENSE` ebuild variables from :term:`PyPi` metadata.
 
         """
-        # TODO: move into enamer
-        if 'homepage' in self.metadata:
-            self['homepage'].add(self.metadata['homepage'])
-
         # There doesn't seem to be any specification for case
-        if 'summary' in self.metadata:
-            self['description'] = self.metadata.get('summary', "")
+        if 'summary' in self:
+            self['description'] = self.get('summary', "")
             # Replace double quotes to keep bash syntax correct
             self['description'] = self['description'].replace('"', "'")
 
-        my_license = ""
-        if 'classifiers' in self.metadata:
-            for data in self.metadata['classifiers']:
-                if data.startswith("License :: "):
-                    my_license = Enamer.convert_license(data)
-        if not my_license:
-            if 'license' in self.metadata:
-                my_license = self.metadata['license']
-        if not Enamer.is_valid_portage_license(my_license):
-            if "LGPL" in my_license:
-                my_license = "LGPL-2.1"
-            elif "GPL" in my_license:
-                my_license = "GPL-2"
-            else:
-                self['warnings'].add("Invalid LICENSE.")
+        my_license = Enamer.convert_license(self.get('classifiers', []), self.get('license', ""))
 
-        self['license'] = my_license
+        if Enamer.is_valid_portage_license(my_license):
+            self['license'] = my_license
+        else:
+            if 'license' in self:
+                del self['license']
+
+        self.options.configs['setup_py'].update(self)
 
     def post_unpack(self):
         """Perform finalization tasks. Dynamically imports *setup.py*
@@ -256,9 +232,6 @@ class Ebuild(dict):
         module_names.extend(self.setup_keywords.get('packages', []))
         module_names.extend(self.setup_keywords.get('py_modules', []))
         module_names.extend(filter(None, self.setup_keywords.get('package_dir', {}).keys()))
-        # TODO: support provides/requires keyword
-        # http://docs.python.org/distutils/setupscript.html
-        # #relationships-between-distributions-and-packages
 
         # set modname only if needed
         if len(module_names) == 1 and module_names[0] != self['pn']:
@@ -267,6 +240,12 @@ class Ebuild(dict):
         # undo monkeypatching
         setuptools.setup = temp_setup
         distutils.core.setup = temp_distutils
+
+        # extract metadata 
+        if 'setup_py' in self.options.use:
+            d = distutils.core.Distribution(self.setup_keywords)
+            metadata = Enamer.parse_setup_py(d)
+            self.update(metadata)
 
     def get_dependencies(self, vanilla_requirements, if_use=None):
         """
@@ -409,13 +388,13 @@ class Ebuild(dict):
     def update_with_s(self):
         """Add ${:term:`S`} to ebuild if needed."""
         log.debug("Trying to determine ${S}, unpacking...")
-        unpacked_dir = PortageUtils.find_s_dir(self['p'], self.options.category)
-        if unpacked_dir == "":
-            self["s"] = "${WORKDIR}"
-            return
+        if self.unpacked_dir is None:
+            unpacked_dir = PortageUtils.find_s_dir(self['p'], self.options.category)
+            if unpacked_dir == "":
+                self["s"] = "${WORKDIR}"
 
-        self.unpacked_dir = os.path.join(PortageUtils.get_workdir(self['p'],
-            self.options.category), unpacked_dir)
+            self.unpacked_dir = os.path.join(PortageUtils.get_workdir(self['p'],
+                self.options.category), unpacked_dir)
 
         if self.get('my_p', None):
             self["s"] = "${WORKDIR}/${MY_P}"
@@ -424,14 +403,7 @@ class Ebuild(dict):
 
     def render(self):
         """Generate ebuild from template"""
-
-        # Add homepage, license and description from metadata
-        self.parse_metadata()
-
-        env = Environment(
-            loader=PackageLoader(self.EBUILD_TEMPLATE_PACKAGE, 'templates'),
-            trim_blocks=True)
-        self.output = env.get_template(self.EBUILD_TEMPLATE).render(self)
+        self.output = self.template.render(self, options=self.options)
         self.output = self.output.replace('    ', '\t')
         return self.output
 
@@ -441,6 +413,7 @@ class Ebuild(dict):
         formatting = self.options.format
         background = self.options.background
 
+        # TODO: create tmpfile
         self.create()
 
         self.show_warnings()
@@ -451,12 +424,15 @@ class Ebuild(dict):
             formatter = get_formatter_by_name(formatting, background=background)
             print highlight(self.output, BashLexer(), formatter)
 
-    def create(self):
+    def create(self, ebuild_path=None):
         """Write ebuild and update it after unpacking and examining ${S}"""
         # Need to write the ebuild first so we can unpack it and check for $S
+        if ebuild_path:
+            self.ebuild_path = ebuild_path
+
         if self.write(overwrite=self.options.overwrite):
-            PortageUtils.unpack_ebuild(self.ebuild_path)
-            #if not self.options.pretend and self.unpacked_dir: # and \
+            if self.unpacked_dir is None:
+                PortageUtils.unpack_ebuild(self.ebuild_path)
             self.update_with_s()
             self.post_unpack()
 
@@ -472,21 +448,24 @@ class Ebuild(dict):
 
     def write(self, overwrite=False):
         """Write ebuild file
+
+        :param overwrite: Overwrite ebuild if it already exists.
+        :type overwrite: bool
+
         """
         # Use command-line overlay if specified, else the one in .g-pyprc
         overlay_name = self.options.overlay
         overlay_path = PortageUtils.get_overlay_path(overlay_name)
 
-        # create path to ebuild
-        # TODO: create fake overlay in /tmp/ when echoing ebuild
-        ebuild_dir = PortageUtils.make_ebuild_dir(self.options.category, self['pn'],
-                overlay_path)
-        if not ebuild_dir:
-            # TODO: raise exception
-            log.error("Couldn't create overlay ebuild directory.")
-
         # get ebuild path
-        self.ebuild_path = os.path.join(ebuild_dir, self['p'] + ".ebuild")
+        if not self.ebuild_path:
+            ebuild_dir = PortageUtils.make_ebuild_dir(self.options.category,
+                self['pn'], overlay_path)
+            if not ebuild_dir:
+                # TODO: raise exception
+                log.error("Couldn't create overlay ebuild directory.")
+            self.ebuild_path = os.path.join(ebuild_dir, self['p'] + ".ebuild")
+
         log.debug('Ebuild.write: build_path(%s)', self.ebuild_path)
 
         # see if we want to overwrite
@@ -495,8 +474,8 @@ class Ebuild(dict):
             return False
 
         # write ebuild
+        out = open(self.ebuild_path, "w")
         try:
-            out = open(self.ebuild_path, "w")
             out.write(self.render())
         finally:
             out.close()

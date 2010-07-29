@@ -41,11 +41,14 @@ class Config(dict):
 
     allowed_options = {
         # 'config_name': ("doc", "type", "default_value"),
-        'pn': ('Specify PN to use when naming ebuild', str, False),
-        'pv': ('Specify PV to use when naming ebuild', str, False),
-        'my_pv': ('Specify MY_PV used in ebuild', str, False),
-        'my_pn': ('Specify MY_PN used in ebuild', str, False),
-        'my_p': ('Specify MY_P used in ebuild', str, False),
+        'up_pn': ('Upstream package name', str, ""),
+        'up_pv': ('Upstream package version', str, ""),
+        'pn': ('Specify PN to use when naming ebuild', str, ""),
+        'pv': ('Specify PV to use when naming ebuild', str, ""),
+        # TODO: move my_* stuff into config, make [] as default and make sure it handles lists from ini
+        'my_pv': ('Specify MY_PV used in ebuild', str, ""),
+        'my_pn': ('Specify MY_PN used in ebuild', str, ""),
+        'my_p': ('Specify MY_P used in ebuild', str, ""),
         'uri': ('Specify SRC_URI of the package', str, ""),
         'index_url': ('Base URL for PyPi', str, "http://pypi.python.org/pypi"),
         'overlay': ('Specify overlay to use by name (stored in $OVERLAY/profiles/repo_name)', str, "local"),
@@ -53,14 +56,16 @@ class Config(dict):
         'no_deps': ("Don't create ebuilds for any needed dependencies", bool, False),
         'category': ("Specify portage category to use when creating ebuild", str, "dev-python"),
         'format': ("Format when printing to stdout (use pygments identifier)", str, "none"),
-        'package': ("Package name for ebuild actions", str, None),
-        'version': ("Package version for ebuild actions", str, None),
-        'command': ("Name of command that was invoked on CLI", str, None),
+        'command': ("Name of command that was invoked on CLI", str, ""),
         'nocolors': ("Disable colorful output", bool, False),
         'background': ("Background of terminal when using formatting", str, 'dark'),
         'pretend': ("Print ebuild to stdout, don't write ebuild file, don't download SRC_URI", bool, False),
+        'license': ("Portage license for the ebuild", str, ""),
+        'keywords': ("Portage keywords for ebuild masking", str, "~x86"),
+        # TODO: homepage will be a list
+        'homepage': ("Homepage of the package", str, ""),
+        'description': ("Short description of the package", str, ""),
     }
-    # TODO: package and version: duplicate
 
     def __repr__(self):
         return "<Config %s>" % dict.__repr__(self)
@@ -282,7 +287,6 @@ class Questionnaire(object):
         if self.IS_FIRST_QUESTION:
             self.print_help()
 
-        # TODO: integrate in logging
         if self.options.nocolors:
             msg = "%s [%r]: "
         else:
@@ -290,12 +294,12 @@ class Questionnaire(object):
                 + "%r" + colorize("BRACKET", ']') + ": "
 
         option = Config.allowed_options[name]
-        answer = input_f(msg % (option[0].title(), option[2])) or option[2]
+        answer = input_f(msg % (option[0].capitalize(), option[2])) or option[2]
 
         try:
             return Config.validate(name, answer)
         except GPyPiValidationError, e:
-            log.error(e)
+            log.error("Error: %s" % e)
             return self.ask(name, input_f)
 
     def print_help(self):

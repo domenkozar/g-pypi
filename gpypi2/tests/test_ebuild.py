@@ -35,10 +35,9 @@ class TestEbuild(BaseTestCase):
         # monkey patch portage environment
         portage_utils.ENV['PORTDIR_OVERLAY'] += ' %s' % self.overlay_dir
 
-        config = ConfigManager(['ini'])
-        config.configs['ini'] = dict(overwrite=False, overlay='gpypi-tests')
-        self.ebuild_args = ('foobar', '1.0', '', config)
-        self.ebuild = Ebuild(*self.ebuild_args)
+        config = ConfigManager(['pypi', 'ini'])
+        config.configs['ini'] = dict(overwrite=False, overlay='gpypi-tests', up_pn='foobar', up_pv='1.0')
+        self.ebuild = Ebuild(config)
         self.ebuild.unpacked_dir = self.s
 
     def test_get_dependencies_empty(self):
@@ -127,8 +126,9 @@ class TestEbuild(BaseTestCase):
         self.assertEqual(self.ebuild.metadata, {})
 
     def test_set_metadata(self):
-        self.ebuild.set_metadata({'Home-Page': 'foobar', 'License_': 'bar'})
-        self.assertEqual(self.ebuild.metadata, {'homepage': 'foobar', 'license': 'bar'})
+        self.ebuild.set_metadata({'Home-Page': 'foobar', 'License_': 'GPL'})
+        self.assertEqual('foobar', self.ebuild['homepage'])
+        self.assertEqual('GPL-2', self.ebuild['license'])
 
     @unittest2.expectedFailure
     def test_set_ebuild_vars(self):
@@ -142,9 +142,9 @@ class TestEbuild(BaseTestCase):
             'summary': 'bar',
         })
         self.ebuild.parse_metadata()
-        self.assertIn('foobar', self.ebuild['homepage'])
-        self.assertEqual(self.ebuild['license'], 'GPL-2')
-        self.assertEqual(self.ebuild['description'], 'bar')
+        self.assertEqual('foobar', self.ebuild['homepage'])
+        self.assertEqual('GPL-2', self.ebuild['license'])
+        self.assertEqual('bar', self.ebuild['description'])
 
     def test_discover_docs(self):
         docs_dir = os.path.join(self.s, 'docs')

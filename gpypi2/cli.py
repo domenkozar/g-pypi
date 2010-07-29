@@ -21,6 +21,7 @@ from yolk.setuptools_support import get_download_uri
 from gpypi2 import __version__
 from gpypi2.exc import *
 from gpypi2.enamer import Enamer
+from gpypi2.sdist_ebuild import sdist_ebuild
 from gpypi2.config import Config, ConfigManager
 from gpypi2.ebuild import Ebuild
 from gpypi2.portage_utils import PortageUtils
@@ -216,20 +217,21 @@ class CLI(object):
 
     def create(self):
         """"""
-        gpypi = GPyPI(self.config.package, self.config.version, self.config)
+        gpypi = GPyPI(self.config.up_pn, self.config.up_pv, self.config)
         gpypi.create_ebuilds()
         # TODO: atomic cleanup
 
     def install(self):
         """"""
         self.create()
-        package = Enamer.parse_pn(self.config.package)[0]
-        os.execvp('emerge', ['emerge', '-av', package or self.config.package])
+        package = Enamer.parse_pn(self.config.up_pn)[0]
+        os.execvp('emerge', ['emerge', '-av', package or self.config.up_pn])
         # TODO: support for emerge arguments
+        # TODO: install exact version
 
     def echo(self):
         """"""
-        gpypi = GPyPI(self.config.package, self.config.version, self.config)
+        gpypi = GPyPI(self.config.up_pn, self.config.up_pv, self.config)
         gpypi.do_ebuild()
         # TODO: cleanup
 
@@ -305,8 +307,8 @@ def main(args=sys.argv[1:]):
 
     # ebuild handling options
     ebuild_parser = argparse.ArgumentParser(add_help=False)
-    ebuild_parser.add_argument('package', action='store')
-    ebuild_parser.add_argument('version', nargs='?', default=None)
+    ebuild_parser.add_argument('up_pn', action='store', metavar="package name")
+    ebuild_parser.add_argument('up_pv', nargs='?', default=None, metavar="package version")
 
     # create & install options
     create_install_parser = argparse.ArgumentParser(add_help=False)
@@ -343,6 +345,9 @@ def main(args=sys.argv[1:]):
     parser_pypi = subparsers.add_parser('sync', help="Populate all packages from pypi into an overlay",
         description="Populate all packages from pypi into an overlay",
         parents=[parser, create_install_parser])
+
+    # register sdist_ebuild command
+    sdist_ebuild.register()
 
     args = main_parser.parse_args(args)
 

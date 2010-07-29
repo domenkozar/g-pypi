@@ -60,6 +60,8 @@ List of features that may be implemented in no particular order:
 
 * finish SrcUriNamer implementation
 
-* python setup.py bdist_ebuild
-
 * implement setuptools Feature class
+
+* SVN/GIT/HG support as SRC_URI
+
+* implement homepage/src_uri as list (also includes config work)

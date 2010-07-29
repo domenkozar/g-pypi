@@ -21,10 +21,12 @@ MY_PN="{{ value }}"
 {% for value in my_pv %}
 MY_PV="{{ value }}"
 {% endfor %}
-{% if my_p %}MY_P="{{ my_p }}"{% endif %}
+{% if my_p %}
+MY_P="{{ my_p }}"
+{% endif %}
 
-DESCRIPTION="{{ description }}"
-HOMEPAGE="{{ homepage|join(" ") }}"
+DESCRIPTION="{{ options.description }}"
+HOMEPAGE="{{ options.homepage }}"
 {% if esvn_repo_uri %}
 ESVN_REPO_URI="{{ esvn_repo_uri }}"
 {% else %}
@@ -32,18 +34,18 @@ ESVN_REPO_URI="{{ esvn_repo_uri }}"
 SRC_URI="{{ src_uri }}"
 {% endif %}
 
-LICENSE="{{ license }}"
-KEYWORDS="{{ keywords }}"
+LICENSE="{{ options.license }}"
+KEYWORDS="{{ options.keywords }}"
 SLOT="{{ slot }}"
 IUSE="{{ use|join(" ") }}"
 
 {% if depend %}
-DEPEND="{{ depend|join("\n\t") }}"
+DEPEND="{{ depend|list|sort|join("\n\t") }}"
 {% endif %}
 {% if depend and depend == rdepend %}
 DEPEND="${RDEPEND}"
 {% elif rdepend %}
-RDEPEND="{{ rdepend|join("\n\t") }}"
+RDEPEND="{{ rdepend|list|sort|join("\n\t") }}"
 {% endif %}
 
 {% if s %}

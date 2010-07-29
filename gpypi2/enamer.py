@@ -174,6 +174,25 @@ class Enamer(object):
         return urlparse.urlunparse(skinned_uri[:3] + ('',) * 3)
 
     @classmethod
+    def parse_setup_py(cls, distribution):
+        """Parse metadata from :class:`Distribution` file.
+
+        :param distribution:
+        :type distirbution:
+        :returns: Dictionary with extracted metadata
+
+        """
+        d = {}
+        d['homepage'] = distribution.get_url()
+        d['description'] = distribution.get_description()
+        d['license'] = cls.convert_license(distribution.get_classifiers(), distribution.metadata.get_license())
+
+        for key in dict(d).keys():
+            if d[key] == 'UNKNOWN':
+                del d[key]
+        return d
+
+    @classmethod
     def parse_pv(cls, up_pv, pv="", my_pv=None):
         """Convert PV to MY_PV if needed
 
@@ -558,27 +577,39 @@ class Enamer(object):
         return uri.replace(my_p_raw, "${MY_P}"), my_p_raw
 
     @classmethod
-    def convert_license(cls, license):
+    def convert_license(cls, classifiers, setup_license=""):
         """
         Map defined classifier license to Portage license
 
         PyPi list of licences:
         http://pypi.python.org/pypi?:action=list_classifiers
 
-        :param license: PyPi license classifier
-        :type license: string
+        :param classifiers: PyPi license classifier
+        :type classifiers: list of string
+        :param setup_license: license extracted from setup_py
+        :type setup_license: string
         :returns: Portage license or ""
         :rtype: string
 
         **Example:**
 
-        >>> Enamer.convert_license("License :: OSI Approved :: BSD License")
+        >>> Enamer.convert_license(["License :: OSI Approved :: BSD License"])
         'BSD-2'
-        >>> Enamer.convert_license("License :: OSI Approved :: foobar")
+        >>> Enamer.convert_license(["License :: OSI Approved :: foobar"])
         ''
-
+        
         """
-        my_license = license.split(":: ")[-1]
+        if not isinstance(classifiers, list):
+            raise ValueError("classifiers should be a list, not %s" % type(classifiers))
+        if not isinstance(setup_license, basestring):
+            raise ValueError("setup_license should be a string, not %s" % type(setup_license))
+        # TODO: update license guessing docs
+        my_license = ""
+        for line in classifiers:
+            if line.startswith("License :: "):
+                my_license = line
+
+        my_license = my_license.split(":: ")[-1]
         known_licenses = {
             "Academic Free License (AFL)": "AFL-3.0",
             "Aladdin Free Public License (AFPL)": "Aladdin",
@@ -613,7 +644,21 @@ class Enamer(object):
             "zlib/libpng License": "ZLIB",
             "Zope Public License": "ZPL",
         }
-        return known_licenses.get(my_license, "")
+        guess_license = {
+            'LGPL': 'LGPL-2.1',
+            'GPL': 'GPL-2',
+        }
+        license = known_licenses.get(my_license, "")
+        if license:
+            return license
+        else:
+            if isinstance(setup_license, str) and not Enamer.is_valid_portage_license(setup_license):
+                for guess, value in guess_license.iteritems():
+                    if guess in setup_license:
+                        return value
+                return ""
+            else:
+                return setup_license
 
     @classmethod
     def is_valid_portage_license(cls, license):
