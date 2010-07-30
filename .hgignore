@@ -11,3 +11,4 @@ syntax: glob
 *include/*
 *lib*
 .ropeproject
+portage/

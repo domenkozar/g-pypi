@@ -8,6 +8,14 @@ Python API
 
 .. automodule:: gpypi2
 
+:mod:`gpypi2.sdist_ebuild` -- Distutils command
+====================================================
+
+.. automodule:: gpypi2.sdist_ebuild
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 :mod:`gpypi2.cli` -- Command line handling
 ====================================================
 
@@ -63,6 +71,14 @@ Python API
 ****************************************
 
 .. automodule:: gpypi2.tests
+
+:mod:`gpypi2.tests.test_sdist_ebuild`
+=====================================
+
+.. automodule:: gpypi2.tests.test_sdist_ebuild
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
 :mod:`gpypi2.tests.test_cli`
 =====================================

@@ -13,8 +13,11 @@ from gpypi2.ebuild import Ebuild
 from gpypi2.config import Config, ConfigManager
 
 
+distutils_path = os.path.dirname(os.path.abspath(distutils.__file__))
+
 class sdist_ebuild(Command):
     description = "create an ebuild file for Gentoo Linux"
+    path_to_distutils_conf = os.path.join(distutils_path, 'distutils.cfg')
 
     user_options = [
         ('config-file=', 'c',
@@ -25,8 +28,10 @@ class sdist_ebuild(Command):
          "[default: dist]"),
         ]
 
-    default_format = { 'posix': 'ebuild',
-                       'nt': '' }
+    argparse_config = {
+        'overwrite': True,
+    }
+    default_format = {'posix': 'ebuild', 'nt': '' }
 
     def initialize_options (self):
         self.dist_dir = None
@@ -41,11 +46,8 @@ class sdist_ebuild(Command):
     @classmethod
     def register(cls):
         """Writes gpypi2 project into distutils commmand_packages settings."""
-        here = os.path.dirname(os.path.abspath(distutils.__file__))
-        path_to_distutils_conf = os.path.join(here, 'distutils.cfg')
-
         conf = SafeConfigParser()
-        conf.read(path_to_distutils_conf)
+        conf.read(cls.path_to_distutils_conf)
 
         d = Distribution()
         try:
@@ -58,17 +60,18 @@ class sdist_ebuild(Command):
         if 'gpypi2' not in pkg:
             pkg.append('gpypi2')
             conf.set('global', 'command_packages', ','.join(pkg))
-            conf.write(open(path_to_distutils_conf, 'w'))
+            conf.write(open(cls.path_to_distutils_conf, 'w'))
 
     def run(self):
         """"""
         # TODO: configure logging
-        mgr = ConfigManager.load_from_ini("/etc/gpypi2")
-        mgr.configs['argparse'] = Config({
-            'overwrite': True,
+        self.argparse_config.update({
             'up_pn': self.distribution.get_name(),
             'up_pv': self.distribution.get_version(),
         })
+
+        mgr = ConfigManager.load_from_ini("/etc/gpypi2")
+        mgr.configs['argparse'] = Config(self.argparse_config)
         mgr.configs['setup_py'] = Config.from_setup_py(Enamer.parse_setup_py(self.distribution))
         # TODO: config option for ini
         ebuild = Ebuild(mgr)
