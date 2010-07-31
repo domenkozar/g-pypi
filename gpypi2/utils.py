@@ -105,3 +105,13 @@ class PortageFormatter(logging.Formatter):
             output = output + '\n'
 
         return l.output or output
+
+def recursivley_find_file(path, filename, in_text=None):
+    """Find filename in specified path recursively"""
+    for root, dirs, files in os.walk(path):
+        if filename in files:
+            file_ = os.path.join(root, filename)
+            if not in_text:
+                return file_
+            elif in_text in open(file_).read():
+                return file_

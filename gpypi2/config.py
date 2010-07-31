@@ -309,6 +309,6 @@ class Questionnaire(object):
         """
         log.info("You are using interactive mode for configuration.")
         log.info("Answer questions with configuration value or press enter")
-        log.info("to use default value printed in brackets.")
+        log.info("to use default value printed in brackets.\n")
 
         self.IS_FIRST_QUESTION = False

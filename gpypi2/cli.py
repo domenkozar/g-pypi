@@ -81,7 +81,7 @@ class GPyPI(object):
                 pkgs.append(deps[0])
 
         if project_name not in pkgs:
-            # TODO: document that we can not query pypi with version spec
+            # TODO: document that we can not query pypi with version spec or use distutils2
             # for dependencies
             self.tree.append((project_name, None))
             log.info("Dependency needed: %s" % project_name)
@@ -165,7 +165,10 @@ class GPyPI(object):
         log.info('Generating ebuild: %s %s', self.package_name, self.version)
 
         #try:
-        ebuild = Ebuild(self.package_name, self.version, download_url, self.options)
+        self.options.configs['argparse']['uri'] = download_url
+        self.options.configs['argparse']['up_pn'] = self.package_name
+        self.options.configs['argparse']['up_pv'] = self.version
+        ebuild = Ebuild(self.options)
         # TODO: convert exceptions to ours
         #except portage_exception.InvalidVersionString:
             #log.error("Can't determine PV, use -v to set it: %s-%s" % \

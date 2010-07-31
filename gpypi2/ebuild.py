@@ -21,6 +21,8 @@ Creates an ebuild
 import sys
 import os
 import logging
+import tempfile
+import shutil
 from pprint import pformat
 from datetime import date
 import distutils.core
@@ -413,8 +415,13 @@ class Ebuild(dict):
         formatting = self.options.format
         background = self.options.background
 
-        # TODO: create tmpfile
-        self.create()
+        d = tempfile.mkdtemp()
+        try:
+            ebuild_path = self.find_path_to_ebuild(d)
+            # TODO: create fake overlay
+            self.create(ebuild_path)
+        finally:
+            shutil.rmtree(d)
 
         self.show_warnings()
         if formatting == "none":
@@ -446,6 +453,15 @@ class Ebuild(dict):
         # overwrite be used?
         return self.requires
 
+    def find_path_to_ebuild(self, overlay_path,  build_dir=None):
+        """"""
+        ebuild_dir = PortageUtils.make_ebuild_dir(self.options.category,
+            self['pn'], overlay_path)
+        if not os.path.isdir(ebuild_dir or ""):
+            # TODO: raise exception
+            log.error("Couldn't create overlay ebuild directory.")
+        return os.path.join(ebuild_dir, self['p'] + ".ebuild")
+
     def write(self, overwrite=False):
         """Write ebuild file
 
@@ -459,12 +475,7 @@ class Ebuild(dict):
 
         # get ebuild path
         if not self.ebuild_path:
-            ebuild_dir = PortageUtils.make_ebuild_dir(self.options.category,
-                self['pn'], overlay_path)
-            if not ebuild_dir:
-                # TODO: raise exception
-                log.error("Couldn't create overlay ebuild directory.")
-            self.ebuild_path = os.path.join(ebuild_dir, self['p'] + ".ebuild")
+            self.ebuild_path = self.find_path_to_ebuild(overlay_path)
 
         log.debug('Ebuild.write: build_path(%s)', self.ebuild_path)
 
