@@ -33,4 +33,4 @@ class TestUtils(BaseTestCase):
     def test_recursivley_find_file(self):
         file_ = recursivley_find_file(os.path.dirname(
             os.path.abspath(gpypi2.__file__)), 'test_pypi.py')
-        self.assertRegexpMatches(file_, '.+g-pypi2/gpypi2/tests/test_pypi.py$')
+        self.assertRegexpMatches(file_, '.+gpypi2/tests/test_pypi.py$')
