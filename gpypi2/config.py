@@ -196,16 +196,16 @@ class ConfigManager(object):
             if use.count(config) != 1:
                 raise GPyPiConfigurationError("ConfigManager could not be setup"
                     ", config order has non-unique member: %s" % config)
-        self.use = use
+        self.use = ['questionnaire'] + use
         self.questionnaire_options =  questionnaire_options or []
         self.q = (questionnaire_class or Questionnaire)(self)
-        self.configs = {}
+        self.configs = {'questionnaire': {}}
 
     def __repr__(self):
         return "<ConfigManager configs(%s) use(%s)>" % (self.configs.keys(), self.use)
 
     def __getattr__(self, name):
-        if not self.configs:
+        if len(self.configs) == 1:
             raise GPyPiConfigurationError("At least one config file must be used.")
 
         if name not in Config.allowed_options:
@@ -234,7 +234,8 @@ class ConfigManager(object):
 
         """
         if name in self.questionnaire_options:
-            return self.q.ask(name)
+            self.configs['questionnaire'][name] = self.q.ask(name)
+            return self.configs['questionnaire'][name]
         else:
             return Config.allowed_options[name][2]
 
@@ -294,6 +295,7 @@ class Questionnaire(object):
                 + "%r" + colorize("BRACKET", ']') + ": "
 
         option = Config.allowed_options[name]
+        # ask the question or use default
         answer = input_f(msg % (option[0].capitalize(), option[2])) or option[2]
 
         try:

@@ -102,6 +102,19 @@ class TestConfigManager(BaseTestCase):
         self.assertEqual([('ask', ('category',), {})], self.mgr.q.method_calls)
         self.assertEqual(1, self.mgr.q.ask.call_count)
 
+    @mock.patch('gpypi2.config.Questionnaire')
+    def test_use_questionaire_multiple_times(self, q):
+        self.mgr = ConfigManager(['pypi', 'setup_py'], ['category'], q)
+        self.mgr.configs['pypi'] = Config.from_pypi({})
+        self.mgr.category
+
+        self.assertEqual([('ask', ('category',), {})], self.mgr.q.method_calls)
+        self.assertEqual(1, self.mgr.q.ask.call_count)
+
+        self.mgr.category
+        self.assertEqual([('ask', ('category',), {})], self.mgr.q.method_calls)
+        self.assertEqual(1, self.mgr.q.ask.call_count)
+
     def test_non_existent_option(self):
         self.mgr.configs['pypi'] = Config.from_pypi({})
 
@@ -130,7 +143,7 @@ questionnaire_options = overlay uri package version
         mgr = ConfigManager.load_from_ini(ini_path)
         self.assertTrue(os.path.exists(ini_path))
 
-        self.assertEqual(mgr.use, ['argparse', 'pypi', 'ini', 'setup_py'])
+        self.assertEqual(mgr.use, ['questionnaire', 'argparse', 'pypi', 'ini', 'setup_py'])
         self.assertEqual(mgr.questionnaire_options, ['overlay', 'uri', 'package', 'version'])
 
     def test_create_ini(self):

@@ -52,5 +52,3 @@ class TestMain(BaseTestCase):
     def test_help(self):
         """docstring for test_help"""
         self.assertRaises(SystemExit, main, ['--help'])
-
-        self.assertRaises(SystemExit, main, ['create', 'foobar'])

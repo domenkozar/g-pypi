@@ -704,7 +704,7 @@ class Enamer(object):
             atom += '[%s]' % ",".join(uses)
 
         if if_use:
-            atom = ('%s? ' % if_use) + atom
+            atom = '%s? ( %s )' % (if_use, atom)
 
         return atom
 

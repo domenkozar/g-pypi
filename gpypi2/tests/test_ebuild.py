@@ -75,7 +75,7 @@ class TestEbuild(BaseTestCase):
 
     def test_get_dependencies_if_use(self):
         self.ebuild.get_dependencies('foobar==0.1', 'test')
-        self.assertIn('test? =dev-python/foobar-0.1', self.ebuild['rdepend'])
+        self.assertIn('test? ( =dev-python/foobar-0.1 )', self.ebuild['rdepend'])
 
     def test_get_dependencies_double_less_more1(self):
         self.ebuild.get_dependencies('foobar>=0.1,<0.2')

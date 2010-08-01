@@ -156,13 +156,11 @@ class GPyPI(object):
             self.version = get_highest_version(versions)
 
         # TODO: self.options.uri only for first ebuild
-        if self.options.uri:
-            download_url = self.options.uri
-        else:
-            # TODO: make find_uri method configurable
-            download_url = self.find_uri()
+        # TODO: make find_uri method configurable
+        download_url = self.find_uri()
 
         log.info('Generating ebuild: %s %s', self.package_name, self.version)
+        log.debug('URI from PyPi: %s', download_url)
 
         #try:
         self.options.configs['argparse']['uri'] = download_url
