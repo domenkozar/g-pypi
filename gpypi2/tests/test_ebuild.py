@@ -205,3 +205,5 @@ class TestEbuild(BaseTestCase):
         self.assertEqual(set(['dev-python/setuptools']), self.ebuild['rdepend'])
         self.assertEqual(set(['dev-python/setuptools']), self.ebuild['depend'])
         self.assertEqual(set(), self.ebuild['use'])
+
+    # TODO: ebuild with echo command and no overlay

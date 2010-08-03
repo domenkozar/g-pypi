@@ -418,7 +418,6 @@ class Ebuild(dict):
         d = tempfile.mkdtemp()
         try:
             ebuild_path = self.find_path_to_ebuild(d)
-            # TODO: create fake overlay
             self.create(ebuild_path)
         finally:
             shutil.rmtree(d)
@@ -454,13 +453,13 @@ class Ebuild(dict):
         # overwrite be used?
         return self.requires
 
-    def find_path_to_ebuild(self, overlay_path,  build_dir=None):
+    def find_path_to_ebuild(self, overlay_path):
         """"""
         ebuild_dir = PortageUtils.make_ebuild_dir(self.options.category,
             self['pn'], overlay_path)
         if not os.path.isdir(ebuild_dir or ""):
             # TODO: raise exception
-            log.error("Couldn't create overlay ebuild directory.")
+            log.error("Couldn't create overlay ebuild directory: %s",  ebuild_dir)
         return os.path.join(ebuild_dir, self['p'] + ".ebuild")
 
     def write(self, overwrite=False):
@@ -470,12 +469,11 @@ class Ebuild(dict):
         :type overwrite: bool
 
         """
-        # Use command-line overlay if specified, else the one in .g-pyprc
-        overlay_name = self.options.overlay
-        overlay_path = PortageUtils.get_overlay_path(overlay_name)
 
         # get ebuild path
         if not self.ebuild_path:
+            overlay_name = self.options.overlay
+            overlay_path = PortageUtils.get_overlay_path(overlay_name)
             self.ebuild_path = self.find_path_to_ebuild(overlay_path)
 
         log.debug('Ebuild.write: build_path(%s)', self.ebuild_path)
