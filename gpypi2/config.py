@@ -249,12 +249,23 @@ class ConfigManager(object):
         :param section: ini section to be used for :class:`ConfigManager` configuration
         :type section: string
         """
+        CHANGED = False
         if not os.path.exists(path_to_ini):
             shutil.copy(cls.INI_TEMPLATE_PATH, path_to_ini)
             log.info('Config was generated at %s', path_to_ini)
 
+
         config = SafeConfigParser()
         config.read(path_to_ini)
+
+        # add sections if not available
+        for sec in [section, 'config']:
+            if sec not in config.sections():
+                config.add_section(sec)
+                CHANGED = True
+        if CHANGED:
+            config.write(open(path_to_ini, 'w'))
+
         config_mgr = dict(config.items(section))
 
         use = config_mgr.get('use', '').split()

@@ -54,11 +54,14 @@ class TestSdistEbuild(BaseTestCase):
         self.assertRegexpMatches(open(self.s).read(), r'^\[global\]\s*command_packages = distutils.command,stuff,ok,gpypi2\s*$')
 
     def test_sdist_ebuild(self):
+        open(self.s, 'w').write("""[config]\n[config_manager]\nuse= argparse setup_py\n""")
         d = Distribution()
         s = sdist_ebuild(d)
         s.argparse_config.update({'uri': 'http://pypi.python.org/p/unknown-0.0.0.tar.gz'})
         s.dist_dir = self.d
+        s.config_file = self.s
         s.run()
 
         # assert ebuild text
-        self.assertAlmostEqual(open(os.path.join(self.d, 'unknown-0.0.0.ebuild')).read(), open(os.path.join(self.SETUP_SAMPLES_DIR, self.id() + '.output')).read())
+        self.assertAlmostEqual(open(os.path.join(self.d, 'unknown-0.0.0.ebuild')).read(),
+            open(os.path.join(self.SETUP_SAMPLES_DIR, self.id() + '.output')).read())

@@ -21,7 +21,7 @@ class sdist_ebuild(Command):
 
     user_options = [
         ('config-file=', 'c',
-         "GPyPi configuration file"
+         "GPyPi configuration file "
          "[default: /etc/gpypi2]"),
         ('dist-dir=', 'd',
          "directory to put the source distribution archive(s) in "
@@ -35,8 +35,11 @@ class sdist_ebuild(Command):
 
     def initialize_options (self):
         self.dist_dir = None
+        self.config_file = None
 
     def finalize_options (self):
+        if self.config_file is None:
+            self.config_file = "/etc/gpypi2"
         if self.dist_dir is None:
             self.dist_dir = "dist"
 
@@ -70,10 +73,9 @@ class sdist_ebuild(Command):
             'up_pv': self.distribution.get_version(),
         })
 
-        mgr = ConfigManager.load_from_ini("/etc/gpypi2")
+        mgr = ConfigManager.load_from_ini(self.config_file)
         mgr.configs['argparse'] = Config(self.argparse_config)
         mgr.configs['setup_py'] = Config.from_setup_py(Enamer.parse_setup_py(self.distribution))
-        # TODO: config option for ini
         ebuild = Ebuild(mgr)
         ebuild.unpacked_dir = os.getcwd()
         to = os.path.join(self.dist_dir, ebuild['p'] + '.ebuild')

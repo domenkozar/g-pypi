@@ -152,6 +152,13 @@ questionnaire_options = overlay uri package version
         ConfigManager.load_from_ini(ini_path)
         self.assertTrue(os.path.exists(ini_path))
 
+    def test_empty_ini(self):
+        ini_path = os.path.join(self.tmp_dir, 'ini')
+        open(ini_path, 'w')
+        self.assertTrue(os.path.exists(ini_path))
+        ConfigManager.load_from_ini(ini_path)
+        self.assertTrue(os.path.exists(ini_path))
+
     def test_load_from_ini_source(self):
         ini_path = os.path.join(self.tmp_dir, 'ini')
         f = open(ini_path, 'w')

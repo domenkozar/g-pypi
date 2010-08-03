@@ -445,7 +445,8 @@ class Ebuild(dict):
 
             # Write ebuild again after unpacking and adding ${S}
             self.write(overwrite=True)
-            log.info("Your ebuild is here: " + self.ebuild_path)
+            if self.options.command != 'echo':
+                log.info("Your ebuild is here: " + self.ebuild_path)
 
         # TODO: If ebuild already exists, we don't unpack and get dependencies
         # because they must exist.
