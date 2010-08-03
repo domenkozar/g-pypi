@@ -56,6 +56,8 @@ List of features that may be implemented in no particular order:
 
 * exceptions documentation and catching exceptions in CLI
 
+* migrate to simpleindex and xmlrpc API provided by distutils2
+
 * issue HEAD request to homepages (warn on failure)
 
 * finish SrcUriNamer implementation

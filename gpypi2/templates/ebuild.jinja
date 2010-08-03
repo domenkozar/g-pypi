@@ -55,19 +55,19 @@ S="{{ s }}"
 PYTHON_MODNAME="{{ python_modname|join(" ") }}"
 {% endif %}
 
-{% if src_install %}
+{% if docs_dir or examples_dir %}
 src_install() {
     distutils_src_install
-    {% if 'docs' in use %}
+{% if docs_dir %}
     if use doc; then
         dodoc -r {{ docs_dir }}
     fi
-    {% endif %}
-    {% if 'examples' in use %}
+{% endif %}
+{% if examples_dir %}
     if use examples; then
         insinto /usr/share/doc/"${PF}"/
         doins -r {{ examples_dir }}
     fi
-    {% endif %}
+{% endif %}
 }
 {% endif %}
