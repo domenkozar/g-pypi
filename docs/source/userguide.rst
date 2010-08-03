@@ -105,6 +105,16 @@ and most of the time one will use the :command:`pypi2 create` command::
       -p, --pretend         Print ebuild to stdout, don't write ebuild file, don't
                             download SRC_URI.
 
+Creating ebuild from source of Python package with distutils
+****************************************************************
+
+:mod:`gpypi2` supports not also querying :term:`PyPi` but also creating an ebuild with
+help of distutils. Configuration is done when you first run :mod:`gpypi2`. ``cd`` to
+your package and just do::
+
+    python setup.py sdist_ebuild
+
+
 .. _configuration:
 
 Configuration
