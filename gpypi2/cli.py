@@ -179,7 +179,7 @@ class GPyPI(object):
 
         ebuild.set_metadata(self.query_metadata())
 
-        if self.options.command == 'echo' or self.options.pretend:
+        if self.options.command == 'echo':
             ebuild.print_formatted()
         else:
             ebuild.create()
@@ -256,7 +256,10 @@ class CLI(object):
                     log.warn('Skipping %s, no download url', atom)
                 else:
                     try:
-                        gpypi = GPyPI(pn, version, self.config)
+                        self.config.configs['argparse']['uri'] = url
+                        self.config.configs['argparse']['up_pn'] = pn
+                        self.config.configs['argparse']['up_pv'] = version
+                        gpypi = GPyPI(self.config)
                         gpypi.create_ebuilds()
                     except GPyPiException, e:
                         log.warn(e)
@@ -289,6 +292,17 @@ def main(args=sys.argv[1:]):
         help=Config.allowed_options['my_pn'][0])
     parser.add_argument("--MY-P", action='store', dest="my_p",
         help=Config.allowed_options['my_p'][0])
+    parser.add_argument("--homepage", action='store', dest="homepage",
+        help=Config.allowed_options['homepage'][0])
+    parser.add_argument("--keywords", action='store', dest="keywords",
+        help=Config.allowed_options['keywords'][0])
+    parser.add_argument("--license", action='store', dest="license",
+        help=Config.allowed_options['license'][0])
+    parser.add_argument("--description", action='store', dest="description",
+        help=Config.allowed_options['description'][0])
+    # TODO: set long_description in pypi/setup_py
+    parser.add_argument("--long-description", action='store', dest="long_description",
+        help=Config.allowed_options['long_description'][0])
     parser.add_argument("-u", "--uri", action='store', dest="uri",
         help=Config.allowed_options['uri'][0])
     parser.add_argument("-i", "--index-url", action='store', dest="index_url",
@@ -326,6 +340,31 @@ def main(args=sys.argv[1:]):
         #dest="pretend", default=False, help="Print ebuild to stdout, "
         #"don't write ebuild file, don't download SRC_URI.")
 
+    # workflow
+    workflow_parser = create_install_parser.add_argument_group('Workflow control',
+        'Generate metadata, manifest, changelog ...')
+    workflow_parser.add_argument("--metadata-disable", action="store_true",
+        dest="metadata_disable", help=Config.allowed_options['metadata_disable'][0])
+    workflow_parser.add_argument("--metadata-disable-echangelog-user", action="store_true",
+        dest="metadata_disable_echangelog_user",
+        help=Config.allowed_options['metadata_disable_echangelog_user'][0])
+    workflow_parser.add_argument("--metadata-herd", action="store",
+        dest="metadata_herd", help=Config.allowed_options['metadata_herd'][0])
+    workflow_parser.add_argument("--metadata-maintainer-description", action="store",
+        dest="metadata_maintainer_description", help=Config.allowed_options['metadata_maintainer_description'][0])
+    workflow_parser.add_argument("--metadata-maintainer-email", action="store",
+        dest="metadata_maintainer_email", help=Config.allowed_options['metadata_maintainer_email'][0])
+    workflow_parser.add_argument("--metadata-maintainer-name", action="store",
+        dest="metadata_maintainer_name", help=Config.allowed_options['metadata_maintainer_name'][0])
+    # echangelog
+    workflow_parser.add_argument("--echangelog-disable", action="store_true",
+        dest="echangelog_disable", help=Config.allowed_options['echangelog_disable'][0])
+    workflow_parser.add_argument("--echangelog-message", action="store",
+        dest="echangelog_message", help=Config.allowed_options['echangelog_message'][0])
+    # repoman
+    workflow_parser.add_argument("--repoman-commands", action="store",
+        dest="repoman_commands", help=Config.allowed_options['repoman_commands'][0])
+
     ## subcommands
     subparsers = main_parser.add_subparsers(title="commands", dest="command")
 
@@ -338,6 +377,8 @@ def main(args=sys.argv[1:]):
         parents=[parser, ebuild_parser])
     parser_echo.add_argument("--format", action='store', dest="format",
         help=Config.allowed_options['format'][0])
+    parser_echo.add_argument("--background", action='store', dest="background",
+        help=Config.allowed_options['background'][0])
 
     parser_install = subparsers.add_parser('install', help="Install ebuild and it's dependencies",
         description="Install ebuild and it's dependencies",

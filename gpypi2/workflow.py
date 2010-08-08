@@ -69,34 +69,33 @@ class Metadata(Workflow):
 
     def __call__(self):
         """"""
-        if self.options.metagen_disable:
-            log.warning('Skipping metagen...')
+        if self.options.metadata_disable:
+            log.warning('Skipping metadata.xml ...')
             return
         metadata = metagenerator.MyMetadata()
 
-        if self.options.metagen_herd:
-            herds = self.options.metagen_herd.split(",")
+        if self.options.metadata_herd:
+            herds = self.options.metadata_herd.split(",")
         else:
             herds = ["no-herd"]
         metadata.set_herd(herds)
 
-        if not self.options.metagen_disable_echangelog_user:
+        if not self.options.metadata_disable_echangelog_user:
             (name, email) = parse_echangelog_variable(
-                self.options.metagen_maintainer_name,
-                self.options.metagen_maintainer_email)
+                self.options.metadata_maintainer_name,
+                self.options.metadata_maintainer_email)
         else:
-            (name, email) = self.options.metagen_maintainer_name, self.options.metagen_maintainer_email
+            (name, email) = self.options.metadata_maintainer_name, self.options.metadata_maintainer_email
 
         if email:
             names, descs = [], []
             if name:
                 names = name.split(",")
-            if self.options.metagen_maintainer_description:
-                descs = self.options.metagen_maintainer_description.split(",")
+            if self.options.metadata_maintainer_description:
+                descs = self.options.metadata_maintainer_description.split(",")
             metadata.set_maintainer(email.split(","), names, descs)
 
-        # TODO: set long description from metadata
-        #metadata.set_longdescription(options.long)
+        metadata.set_longdescription(self.options.long_description)
 
         filename = os.path.join(self.path, 'metadata.xml')
         if os.path.exists(filename):

@@ -67,3 +67,5 @@ List of features that may be implemented in no particular order:
 * SVN/GIT/HG support as SRC_URI
 
 * implement homepage/src_uri as list (also includes config work)
+
+* decide what to do with configuartion on dependency ebuilds

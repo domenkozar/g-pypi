@@ -35,11 +35,11 @@ class TestWorkflow(BaseTestCase):
     def test_metadata_all(self):
         """"""
         self.options.configs['ini'] = {
-            'metagen_herd': 'python',
-            'metagen_disable_echangelog_user': True,
-            'metagen_maintainer_description': 'I,me',
-            'metagen_maintainer_email': 'foo,bar',
-            'metagen_maintainer_name': 'foo@bar.com,bar@foo.com',
+            'metadata_herd': 'python',
+            'metadata_disable_echangelog_user': True,
+            'metadata_maintainer_description': 'I,me',
+            'metadata_maintainer_email': 'foo,bar',
+            'metadata_maintainer_name': 'foo@bar.com,bar@foo.com',
         }
         m = Metadata(self.options, self.d)
         m()
@@ -67,7 +67,7 @@ class TestWorkflow(BaseTestCase):
 
     def test_metadata_skip(self):
         """"""
-        self.options.configs['ini'] = {'metagen_disable': True}
+        self.options.configs['ini'] = {'metadata_disable': True}
         m = Metadata(self.options, self.d)
         m()
 
