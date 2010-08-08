@@ -38,6 +38,7 @@ setup(name='g-pypi2',
         'yolk',
         'pygments',
         'argparse',
+        'jaxml>=3.02',
     ],
     tests_require=[
         'nose',

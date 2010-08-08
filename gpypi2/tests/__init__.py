@@ -1,12 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import os
 import logging
 import unittest2
 
 
 class BaseTestCase(unittest2.TestCase):
     """Common unittesting utility helpers"""
+    SETUP_SAMPLES_DIR = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), 'setup_samples')
 
 
 class ListHandler(logging.Handler):

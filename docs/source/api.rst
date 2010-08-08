@@ -66,6 +66,15 @@ Python API
    :inherited-members:
    :show-inheritance:
 
+:mod:`gpypi2.workflow` -- Generate manifest, metadata, changelog ...
+=====================================================================
+
+.. automodule:: gpypi2.workflow
+   :members:
+   :undoc-members:
+   :inherited-members:
+   :show-inheritance:
+
 
 :mod:`gpypi2.tests` -- Unittests package
 ****************************************
@@ -124,6 +133,14 @@ Python API
 =====================================
 
 .. automodule:: gpypi2.tests.test_pypi
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+:mod:`gpypi2.tests.test_workflow`
+=====================================
+
+.. automodule:: gpypi2.tests.test_workflow
    :members:
    :undoc-members:
    :show-inheritance:

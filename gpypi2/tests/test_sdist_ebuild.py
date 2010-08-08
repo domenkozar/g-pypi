@@ -19,8 +19,6 @@ from gpypi2.exc import *
 
 class TestSdistEbuild(BaseTestCase):
     """"""
-    SETUP_SAMPLES_DIR = os.path.join(
-        os.path.dirname(os.path.abspath(__file__)), 'setup_samples')
 
     def setUp(self):
         self.s = tempfile.mkstemp()[1]

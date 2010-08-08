@@ -12,3 +12,4 @@ syntax: glob
 *lib*
 .ropeproject
 portage/
+*.patch

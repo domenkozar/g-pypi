@@ -17,8 +17,6 @@ from gpypi2.exc import *
 
 class TestEbuild(BaseTestCase):
     """"""
-    SETUP_SAMPLES_DIR = os.path.join(
-        os.path.dirname(os.path.abspath(__file__)), 'setup_samples')
 
     def setUp(self):
         # unpacked dir

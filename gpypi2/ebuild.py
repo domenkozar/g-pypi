@@ -37,6 +37,7 @@ import setuptools
 from gpypi2 import __version__
 from gpypi2.portage_utils import PortageUtils
 from gpypi2.enamer import Enamer
+from gpypi2.workflow import Repoman, Echangelog, Metadata
 from gpypi2.exc import *
 from gpypi2 import utils
 
@@ -444,6 +445,12 @@ class Ebuild(dict):
 
             # Write ebuild again after unpacking and adding ${S}
             self.write(overwrite=True)
+
+            # apply workflows
+            Metadata(self.options, os.path.dirname(self.ebuild_path))()
+            Echangelog(self.options, os.path.dirname(self.ebuild_path))()
+            Repoman(self.options, os.path.dirname(self.ebuild_path))()
+
             if self.options.command != 'echo':
                 log.info("Your ebuild is here: " + self.ebuild_path)
 

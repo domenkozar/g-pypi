@@ -825,11 +825,11 @@ class SrcUriNamer(object):
 
 class SourceForgeSrcUri(SrcUriNamer):
     """"""
-    BASE_URI = 'http://sourceforge.net/projects/%(pn)s/files/%(pn)s/%(pv)s/%(p)s.%(ext)s/download'
+    BASE_URI = 'mirror://sourceforge/%(pn)s/files/%(pn)s/%(pv)s/%(p)s.%(ext)s/download'
     BASE_HOMEPAGE = 'http://sourceforge.net/projects/%(up_pn)s/'
 
 
 class PyPiSrcUri(SrcUriNamer):
     """"""
-    BASE_URI = 'http://pypi.python.org/packages/source/%(pn0)s/%(pn)s/%(p)s.%(ext)s'
+    BASE_URI = 'mirror://pypi/%(pn0)s/%(pn)s/%(p)s.%(ext)s'
     BASE_HOMEPAGE = 'http://pypi.python.org/pypi/%(up_pn)s/'
