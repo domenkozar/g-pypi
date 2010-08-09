@@ -338,8 +338,8 @@ def main(args=sys.argv[1:]):
     workflow_parser.add_argument("--metadata-disable", action="store_true",
         dest="metadata_disable", help=Config.allowed_options['metadata_disable'][0])
     workflow_parser.add_argument("--metadata-disable-echangelog-user", action="store_true",
-        dest="metadata_disable_echangelog_user",
-        help=Config.allowed_options['metadata_disable_echangelog_user'][0])
+        dest="metadata_use_echangelog_user",
+        help=Config.allowed_options['metadata_use_echangelog_user'][0])
     workflow_parser.add_argument("--metadata-herd", action="store",
         dest="metadata_herd", help=Config.allowed_options['metadata_herd'][0])
     workflow_parser.add_argument("--metadata-maintainer-description", action="store",

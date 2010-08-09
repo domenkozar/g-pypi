@@ -36,7 +36,6 @@ class TestWorkflow(BaseTestCase):
         """"""
         self.options.configs['ini'] = {
             'metadata_herd': 'python',
-            'metadata_disable_echangelog_user': True,
             'metadata_maintainer_description': 'I,me',
             'metadata_maintainer_email': 'foo,bar',
             'metadata_maintainer_name': 'foo@bar.com,bar@foo.com',
@@ -85,6 +84,9 @@ class TestWorkflow(BaseTestCase):
 
     def test_metadata_echangelog_user(self):
         """"""
+        self.options.configs['ini'] = {
+            'metadata_use_echangelog_user': True,
+        }
         os.environ['ECHANGELOG_USER'] = 'foobar <foo@bar.com>'
         m = Metadata(self.options, self.d)
         m()

@@ -71,7 +71,7 @@ class Config(dict):
         'long_description': ("Long description of the package", str, ""),
         # metadata
         'metadata_disable': ("Disable metadata generation", bool, False),
-        'metadata_disable_echangelog_user': ("Don't use ECHANGELOG_USER", bool, False),
+        'metadata_use_echangelog_user': ("Use ECHANGELOG_USER", bool, False),
         'metadata_herd': ("Herd for ebuild metadata", str, ""),
         'metadata_maintainer_description': ("Maintainer descriptions for ebuild metadata (comma separated)", str, ""),
         'metadata_maintainer_email': ("Maintainer emails for ebuild metadata (comma separated)", str, ""),

@@ -80,7 +80,7 @@ class Metadata(Workflow):
             herds = ["no-herd"]
         metadata.set_herd(herds)
 
-        if not self.options.metadata_disable_echangelog_user:
+        if self.options.metadata_use_echangelog_user:
             (name, email) = parse_echangelog_variable(
                 self.options.metadata_maintainer_name,
                 self.options.metadata_maintainer_email)
