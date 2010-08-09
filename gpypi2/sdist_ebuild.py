@@ -8,9 +8,6 @@ from distutils.core import Command
 from distutils.dist import Distribution
 from ConfigParser import SafeConfigParser, NoOptionError, NoSectionError
 
-from gpypi2.enamer import Enamer
-from gpypi2.ebuild import Ebuild
-from gpypi2.config import Config, ConfigManager
 
 
 distutils_path = os.path.dirname(os.path.abspath(distutils.__file__))
@@ -67,6 +64,11 @@ class sdist_ebuild(Command):
 
     def run(self):
         """"""
+        # late import because of setup.py
+        from gpypi2.enamer import Enamer
+        from gpypi2.ebuild import Ebuild
+        from gpypi2.config import Config, ConfigManager
+
         # TODO: configure logging
         self.argparse_config.update({
             'up_pn': self.distribution.get_name(),
