@@ -62,6 +62,7 @@ class TestWorkflow(BaseTestCase):
 \t\t<name>bar@foo.com</name>
 \t\t<description>me</description>
 \t</maintainer>
+\t<longdescription></longdescription>
 </pkgmetadata>
 """)
 
