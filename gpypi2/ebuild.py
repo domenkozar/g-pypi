@@ -446,12 +446,12 @@ class Ebuild(dict):
             # Write ebuild again after unpacking and adding ${S}
             self.write(overwrite=True)
 
-            # apply workflows
-            Metadata(self.options, os.path.dirname(self.ebuild_path))()
-            Echangelog(self.options, os.path.dirname(self.ebuild_path))()
-            Repoman(self.options, os.path.dirname(self.ebuild_path))()
-
             if self.options.command != 'echo':
+                # apply workflows
+                Metadata(self.options, os.path.dirname(self.ebuild_path))()
+                Echangelog(self.options, os.path.dirname(self.ebuild_path))()
+                Repoman(self.options, os.path.dirname(self.ebuild_path))()
+
                 log.info("Your ebuild is here: " + self.ebuild_path)
 
         # TODO: If ebuild already exists, we don't unpack and get dependencies

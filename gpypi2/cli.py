@@ -131,9 +131,6 @@ class GPyPI(object):
             #Sometimes setuptools can find a package URI if PyPI doesn't have it
             download_url = self.url_from_setuptools()
 
-        if not download_url:
-            log.error("Can't find SRC_URI for '%s'." %  self.package_name)
-
         # TODO: configuratior
         log.debug("Package URI: %s " % download_url)
 
@@ -149,8 +146,12 @@ class GPyPI(object):
         #Get proper case for project name:
         (self.package_name, versions) = self.pypi.query_versions_pypi(self.package_name)
 
+        if not versions:
+            log.error("No package %s on PyPi." % self.package_name)
+            return
+
         if self.version and (self.version not in versions):
-            log.error("Can't find package for version:'%s'." %  self.version)
+            log.error("No package %s for version %s on PyPi." % (self.package_name, self.version))
             return
         else:
             self.version = get_highest_version(versions)
@@ -162,21 +163,11 @@ class GPyPI(object):
         log.info('Generating ebuild: %s %s', self.package_name, self.version)
         log.debug('URI from PyPi: %s', download_url)
 
-        #try:
         self.options.configs['argparse']['uri'] = download_url
         self.options.configs['argparse']['up_pn'] = self.package_name
         self.options.configs['argparse']['up_pv'] = self.version
-        ebuild = Ebuild(self.options)
-        # TODO: convert exceptions to ours
-        #except portage_exception.InvalidVersionString:
-            #log.error("Can't determine PV, use -v to set it: %s-%s" % \
-                    #(self.package_name, self.version))
-            #return
-        #except portage_exception.InvalidPackageName:
-            #log.error("Can't determine PN, use -n to set it: %s-%s" % \
-                    #(self.package_name, self.version))
-            #return
 
+        ebuild = Ebuild(self.options)
         ebuild.set_metadata(self.query_metadata())
 
         if self.options.command == 'echo':
@@ -214,7 +205,10 @@ class CLI(object):
 
     def __init__(self, config):
         self.config = config
-        getattr(self, config.command)()
+        try:
+            getattr(self, config.command)()
+        except GPyPiException, e:
+            log.error("%s: %s", e.__class__.__name__, e)
 
     def create(self):
         """"""
@@ -259,10 +253,8 @@ class CLI(object):
                         self.config.configs['argparse']['uri'] = url
                         self.config.configs['argparse']['up_pn'] = pn
                         self.config.configs['argparse']['up_pv'] = version
-                        gpypi = GPyPI(self.config)
+                        gpypi = GPyPI(pn, version, self.config)
                         gpypi.create_ebuilds()
-                    except GPyPiException, e:
-                        log.warn(e)
                     except KeyboardInterrupt:
                         raise
                     except:
@@ -387,9 +379,6 @@ def main(args=sys.argv[1:]):
     parser_pypi = subparsers.add_parser('sync', help="Populate all packages from pypi into an overlay",
         description="Populate all packages from pypi into an overlay",
         parents=[parser, create_install_parser])
-
-    # register sdist_ebuild command
-    sdist_ebuild.register()
 
     args = main_parser.parse_args(args)
 

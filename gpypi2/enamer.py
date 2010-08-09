@@ -503,7 +503,7 @@ class Enamer(object):
         # Make sure we have a valid P
         atom = "=dev-python/%s-%s" % (pn, pv)
         if not PortageUtils.is_valid_atom(atom):
-            log.error(locals())
+            log.debug(locals())
             raise GPyPiInvalidAtom("%s is not a valid portage atom. "
                 "We could not determine it from upstream pn(%s) and pv(%s)." %
                 (atom, up_pn, up_pv))

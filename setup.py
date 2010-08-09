@@ -5,23 +5,32 @@ import sys
 import os
 
 from setuptools import setup, find_packages
+from distutils.command.install_data import install_data
 
+from gpypi2.sdist_ebuild import sdist_ebuild
+
+class post_install(install_data):
+    def run(self):
+        install_data.run(self)
+
+        # register sdist_ebuild command
+        sdist_ebuild.register()
 
 version = '0.1'
 
 setup(name='g-pypi2',
     version=version,
     description="creates ebuilds for Gentoo Linux from Python Package Index",
-    long_description="""""", # TODO: provide long description from docs index.rst
+    long_description="""More at http://docs.fubar.si/gpypi2/""",
     keywords='gentoo linux distribution ebuild package pypi',
     author='Domen Kozar',
     author_email='domen@dev.si',
     url='http://bitbucket.org/iElectric/g-pypi2/',
- #   license='BSD',
     include_package_data=True,
     zip_safe=False,
     test_suite='nose.collector',
     packages=find_packages(),
+    cmdclass={"install_data": post_install},
     classifiers=[
         'Topic :: Software Development :: Build Tools',
         'Topic :: System :: Software Distribution',

@@ -52,10 +52,6 @@ List of features that may be implemented in no particular order:
 
 * atomic actions (cleanup on traceback/error)
 
-* repoman/echangelog/metadata integration
-
-* exceptions documentation and catching exceptions in CLI
-
 * migrate to simpleindex and xmlrpc API provided by distutils2
 
 * issue HEAD request to homepages (warn on failure)
@@ -69,3 +65,5 @@ List of features that may be implemented in no particular order:
 * implement homepage/src_uri as list (also includes config work)
 
 * decide what to do with configuartion on dependency ebuilds
+
+* search command
