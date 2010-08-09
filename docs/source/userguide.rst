@@ -1,4 +1,4 @@
-.. highlight:: console
+.. highlight:: bash
 
 User Guide
 ##########
@@ -60,50 +60,101 @@ Gentoo developers life easier. To create an ebuild and its dependencies::
 Usage should be pretty self explanatory through help::
 
     $ sudo gpypi2 -h
-    usage: gpypi2 [-h] {create,echo} ...
+    usage: gpypi2 [-h] [-v] {create,sync,install,echo} ...
+
+    Builds ebuilds from PyPi.
 
     optional arguments:
-      -h, --help     show this help message and exit
+      -h, --help            show this help message and exit
+      -v, --version
 
     commands:
-      {create,echo}
-        create       Write ebuild to an overlay.
-        echo         Echo ebuild to stdout.
+      {create,sync,install,echo}
+        create              Write ebuild and it's dependencies to an overlay
+        echo                Echo ebuild to stdout
+        install             Install ebuild and it's dependencies
+        sync                Populate all packages from pypi into an overlay
+
 
 and most of the time one will use the :command:`pypi2 create` command::
 
     $ sudo gpypi2 create -h
-    usage: gpypi2 create [-h] [-P PN] [-V PV] [--MY_PV MY_PV] [--MY_PN MY_PN]
-                         [--MY_P MY_P] [-u URI] [-q] [-d] [-v] [--nocolor]
-                         [-l OVERLAY_NAME] [-o] [--no-deps] [-c CATEGORY] [-p]
-                         package [version]
+    usage: gpypi2 create [-h] [-P PN] [-V PV] [--MY-PV MY_PV] [--MY-PN MY_PN]
+                         [--MY-P MY_P] [--homepage HOMEPAGE] [--keywords KEYWORDS]
+                         [--license LICENSE] [--description DESCRIPTION]
+                         [--long-description LONG_DESCRIPTION] [-u URI]
+                         [-i INDEX_URL] [--nocolors] [--config-file CONFIG_FILE]
+                         [-q | -d] [-l OVERLAY_NAME] [-o] [--no-deps]
+                         [-c CATEGORY] [--metadata-disable]
+                         [--metadata-disable-echangelog-user]
+                         [--metadata-herd METADATA_HERD]
+                         [--metadata-maintainer-description METADATA_MAINTAINER_DESCRIPTION]
+                         [--metadata-maintainer-email METADATA_MAINTAINER_EMAIL]
+                         [--metadata-maintainer-name METADATA_MAINTAINER_NAME]
+                         [--echangelog-disable]
+                         [--echangelog-message ECHANGELOG_MESSAGE]
+                         [--repoman-commands REPOMAN_COMMANDS]
+                         package name [package version]
+
+    Write ebuild and it's dependencies to an overlay
 
     positional arguments:
-      package
-      version
+      package name
+      package version
 
     optional arguments:
       -h, --help            show this help message and exit
-      -P PN, --PN PN        Specify PN to use when naming ebuild.
-      -V PV, --PV PV        Specify PV to use when naming ebuild.
-      --MY_PV MY_PV         Specify MY_PV
-      --MY_PN MY_PN         Specify MY_PN
-      --MY_P MY_P           Specify MY_P
-      -u URI, --uri URI     Specify URI of package if PyPI doesn't have it.
+      -P PN, --PN PN        Specify PN to use when naming ebuild
+      -V PV, --PV PV        Specify PV to use when naming ebuild
+      --MY-PV MY_PV         Specify MY_PV used in ebuild
+      --MY-PN MY_PN         Specify MY_PN used in ebuild
+      --MY-P MY_P           Specify MY_P used in ebuild
+      --homepage HOMEPAGE   Homepage of the package
+      --keywords KEYWORDS   Portage keywords for ebuild masking
+      --license LICENSE     Portage license for the ebuild
+      --description DESCRIPTION
+                            Short description of the package
+      --long-description LONG_DESCRIPTION
+                            Long description of the package
+      -u URI, --uri URI     Specify SRC_URI of the package
+      -i INDEX_URL, --index-url INDEX_URL
+                            Base URL for PyPi
+      --nocolors            Disable colorful output
+      --config-file CONFIG_FILE
+                            Absolute path to a config file
       -q, --quiet           Show less output.
       -d, --debug           Show debug information.
-      -v, --version
-      --nocolor
       -l OVERLAY_NAME, --overlay OVERLAY_NAME
-                            Specify overy to use by name
-                            ($OVERLAY/profiles/repo_name)
-      -o, --overwrite       Overwrite existing ebuild.
-      --no-deps             Don't create ebuilds for any needed dependencies.
-      -c CATEGORY, --portage-category CATEGORY
-                            Specify category to use when creating ebuild. Default
-                            is dev-python
-      -p, --pretend         Print ebuild to stdout, don't write ebuild file, don't
-                            download SRC_URI.
+                            Specify overlay to use by name (stored in
+                            $OVERLAY/profiles/repo_name)
+      -o, --overwrite       Overwrite existing ebuild
+      --no-deps             Don't create ebuilds for any needed dependencies
+      -c CATEGORY, --category CATEGORY
+                            Specify portage category to use when creating ebuild
+
+    Workflow control:
+      Generate metadata, manifest, changelog ...
+
+      --metadata-disable    Disable metadata generation
+      --metadata-disable-echangelog-user
+                            Don't use ECHANGELOG_USER
+      --metadata-herd METADATA_HERD
+                            Herd for ebuild metadata
+      --metadata-maintainer-description METADATA_MAINTAINER_DESCRIPTION
+                            Maintainer descriptions for ebuild metadata (comma
+                            separated)
+      --metadata-maintainer-email METADATA_MAINTAINER_EMAIL
+                            Maintainer emails for ebuild metadata (comma
+                            separated)
+      --metadata-maintainer-name METADATA_MAINTAINER_NAME
+                            Maintainer names for ebuild metadata (comma separated)
+      --echangelog-disable  Disable echangelog
+      --echangelog-message ECHANGELOG_MESSAGE
+                            Echangelog commit message
+      --repoman-commands REPOMAN_COMMANDS
+                            List of repoman commands to issue on each ebuild
+                            (separated by space)
+
 
 Creating ebuild from source of Python package with distutils
 ****************************************************************

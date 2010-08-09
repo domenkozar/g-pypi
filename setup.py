@@ -18,7 +18,7 @@ class post_install(install_data):
 
 version = '0.1'
 
-setup(name='g-pypi2',
+setup(name='gpypi2',
     version=version,
     description="creates ebuilds for Gentoo Linux from Python Package Index",
     long_description="""More at http://docs.fubar.si/gpypi2/""",
