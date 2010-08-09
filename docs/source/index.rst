@@ -34,7 +34,10 @@
    * generates ebuilds for dependencies
    * uses Portage-alike colorful output
    * offers :ref:`customizable configuration <configuration>`
-   * adds support for ``python setup.py sdist_ebuild``
+   * support for ``python setup.py sdist_ebuild``
+   * updates ``Manifest`` file
+   * generates ``metadata.xml`` file
+   * appends ``ChangeLog`` file
 
 
 .. topic:: Overview
