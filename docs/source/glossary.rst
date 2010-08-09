@@ -43,3 +43,13 @@ Glossary
 
     PyPi
         Python Package Index (CPAN alike repository for packages) — http://pypi.python.org/pypi
+
+    DESCRIPTION
+        Portage variable, short description of an ebuild program
+
+    AUTHOR
+        Person who initially wrote the program
+
+    eclass
+        Bash script provided by portage for handling ebuilds
+        

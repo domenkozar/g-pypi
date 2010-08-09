@@ -465,8 +465,7 @@ class Ebuild(dict):
         ebuild_dir = PortageUtils.make_ebuild_dir(self.options.category,
             self['pn'], overlay_path)
         if not os.path.isdir(ebuild_dir or ""):
-            # TODO: raise exception
-            log.error("Couldn't create overlay ebuild directory: %s",  ebuild_dir)
+            raise GPyPiCouldNotCreateEbuildPath('Couldn not create ebuild directory %s' % ebuild_dir)
         return os.path.join(ebuild_dir, self['p'] + ".ebuild")
 
     def write(self, overwrite=False):

@@ -1,7 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-""".. currentmodule:: gpypi2.config
+"""
+.. currentmodule:: gpypi2.config
+
 Configuration module
+********************
 
 Implements :class:`Config` and :class:`ConfigManager` to be used as
 "configuration holders" and validators.
@@ -156,7 +159,11 @@ class Config(dict):
 
     @classmethod
     def validate_bool(cls, value):
-        """Subvalidator which handles string values into bool"""
+        """Subvalidator which handles string values into bool
+
+        :raises: :exc:`GPyPiValidationError` if not a bool
+
+        """
         try:
             return asbool(value)
         except ValueError:
@@ -164,7 +171,11 @@ class Config(dict):
 
     @classmethod
     def validate_str(cls, value, encoding='utf-8'):
-        """Subvalidator for string. Also converts to unicode"""
+        """Subvalidator for string. Also converts to unicode
+
+        :raises: :exc:`GPyPiValidationError` if not a string
+
+        """
         if isinstance(value, basestring):
             if isinstance(value, str):
                 value = unicode(value, encoding)

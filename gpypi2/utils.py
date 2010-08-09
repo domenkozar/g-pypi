@@ -13,7 +13,14 @@ from pkg_resources import EntryPoint
 
 
 def load_model(dotted_name):
-    """"""
+    """Load module with dotted name syntax
+
+    Example::
+
+        >>> load_model('gpypi2.utils:import_path')
+        <function import_path at 0x... >
+
+    """
     if isinstance(dotted_name, basestring):
         return EntryPoint.parse('x=%s' % dotted_name).load(False)
     else:
@@ -39,6 +46,16 @@ def import_path(fullpath):
     return module
 
 def asbool(obj):
+    """Do everything to consider ``obj`` as  boolean.
+
+    Example::
+
+        >>> asbool('y')
+        True
+
+    :raises: :exc:`ValueError` -- If object could not be booleanized.
+
+    """
     if isinstance(obj, (str, unicode)):
         obj = obj.strip().lower()
         if obj in ['true', 'yes', 'on', 'y', 't', '1']:

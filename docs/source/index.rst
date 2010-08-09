@@ -28,7 +28,7 @@
    * determine :term:`RDEPEND` / :term:`DEPEND` from :mod:`setuptools`: ``install_requires``, ``tests_require``, ``setup_requires`` and ``extras_require``
    * determine :term:`PYTHON_MODNAME` from :mod:`setuptools`: `packages`, `py_modules` and `package_dir`
    * determine :term:`S` by unpacking ebuild
-   * discovers :term:`DOCS` variable and/or `Sphinx documentation <http://sphinx.pocoo.org/>`_
+   * discovers `Sphinx documentation <http://sphinx.pocoo.org/>`_
    * discovers examples
    * discovers :mod:`nosetests` and ``setup.py test``
    * generates ebuilds for dependencies
@@ -48,7 +48,6 @@
     :command:`gpypi2` is not meant to be a `Gentoo developer replacment <http://www.gentoo.org/proj/en/devrel/roll-call/userinfo.xml>`_.
     On the contrary, it's goal is to make his/hers life easier.
 
-
 .. toctree::
     :maxdepth: 3
 
@@ -56,6 +55,11 @@
     development
     api
     changelog
+
+.. toctree::
+   :hidden:
+
+   glossary
 
 
 Indices and tables

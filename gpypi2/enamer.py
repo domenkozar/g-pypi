@@ -387,6 +387,7 @@ class Enamer(object):
         :type pv: string
         :type my_pn: list
         :type my_pv: list
+        :raises: :exc:`GPyPiInvalidAtom` if version/name could not be parsed correctly
         :returns:
             * pn -- Ebuild Gentoo package name
             * pv -- Ebuild Gentoo package version
@@ -584,7 +585,7 @@ class Enamer(object):
         PyPi list of licences:
         http://pypi.python.org/pypi?:action=list_classifiers
 
-        :param classifiers: PyPi license classifier
+        :param classifiers: PyPi (license) classifiers
         :type classifiers: list of string
         :param setup_license: license extracted from setup_py
         :type setup_license: string
@@ -603,7 +604,7 @@ class Enamer(object):
             raise ValueError("classifiers should be a list, not %s" % type(classifiers))
         if not isinstance(setup_license, basestring):
             raise ValueError("setup_license should be a string, not %s" % type(setup_license))
-        # TODO: update license guessing docs
+
         my_license = ""
         for line in classifiers:
             if line.startswith("License :: "):
