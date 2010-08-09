@@ -61,5 +61,5 @@ class TestSdistEbuild(BaseTestCase):
         s.run()
 
         # assert ebuild text
-        self.assertAlmostEqual(open(os.path.join(self.d, 'unknown-0.0.0.ebuild')).read(),
+        self.assertRegexpMatches(open(os.path.join(self.d, 'unknown-0.0.0.ebuild')).read(),
             open(os.path.join(self.SETUP_SAMPLES_DIR, self.id() + '.output')).read())

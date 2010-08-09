@@ -44,7 +44,7 @@ IUSE="{{ use|join(" ") }}"
 DEPEND="{{ depend|list|sort|join("\n\t") }}"
 {% endif %}
 {% if depend and depend == rdepend %}
-DEPEND="${RDEPEND}"
+RDEPEND="${DEPEND}"
 {% elif rdepend %}
 RDEPEND="{{ rdepend|list|sort|join("\n\t") }}"
 {% endif %}
