@@ -48,6 +48,7 @@ setup(name='gpypi2',
         'pygments',
         'argparse',
         'jaxml>=3.02',
+        'metagen', #metadata.xml
     ],
     tests_require=[
         'nose',

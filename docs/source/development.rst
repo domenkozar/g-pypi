@@ -67,3 +67,5 @@ List of features that may be implemented in no particular order:
 * decide what to do with configuartion on dependency ebuilds
 
 * search command
+
+* use rewriting system instead of regex for pn/pv parsing
