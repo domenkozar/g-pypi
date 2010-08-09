@@ -23,12 +23,13 @@ class TestSdistEbuild(BaseTestCase):
     def setUp(self):
         self.s = tempfile.mkstemp()[1]
         self.d = tempfile.mkdtemp()
+        temp = os.getcwd()
         os.chdir(self.d)
         self.setup_py = os.path.join(self.d, 'setup.py')
         shutil.copy(os.path.join(self.SETUP_SAMPLES_DIR, 'most_simple_setup.tmpl'), self.setup_py)
         self.addCleanup(os.remove, self.s)
         self.addCleanup(shutil.rmtree, self.d)
-        self.addCleanup(os.chdir, self.d)
+        self.addCleanup(os.chdir, temp)
 
         # patch sdist_ebuild
         sdist_ebuild.path_to_distutils_conf = self.s
