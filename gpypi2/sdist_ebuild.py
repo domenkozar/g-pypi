@@ -69,7 +69,7 @@ class sdist_ebuild(Command):
         from gpypi2.ebuild import Ebuild
         from gpypi2.config import Config, ConfigManager
 
-        # TODO: configure logging
+        # TODO: configure logging (handlers and stuff)
         self.argparse_config.update({
             'up_pn': self.distribution.get_name(),
             'up_pv': self.distribution.get_version(),
