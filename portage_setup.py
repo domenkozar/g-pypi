@@ -20,6 +20,6 @@ setup(name="portage",
     keywords="",
     classifiers=[],
     packages=['portage', '_emerge'],
-    package_dir={'':'pym/portage'},
+    package_dir={'':'pym'},
     include_package_data = True,
 )
