@@ -57,7 +57,7 @@ class Config(dict):
         'overlay': ('Specify overlay to use by name (stored in $OVERLAY/profiles/repo_name)', str, "local"),
         'overwrite': ('Overwrite existing ebuild', bool, False),
         'no_deps': ("Don't create ebuilds for any needed dependencies", bool, False),
-        'category': ("Specify portage category to use when creating ebuild", str, "dev-python"),
+        'category': ("Specify portage category to use when creating ebuild", str, ""),
         'format': ("Format when printing to stdout (use pygments identifier)", str, "none"),
         'command': ("Name of command that was invoked on CLI", str, ""),
         'nocolors': ("Disable colorful output", bool, False),

@@ -23,6 +23,8 @@ import os
 import logging
 import tempfile
 import shutil
+import string
+
 from pprint import pformat
 from datetime import date
 import distutils.core
@@ -41,6 +43,7 @@ from gpypi2.workflow import Repoman, Echangelog, Metadata
 from gpypi2.exc import *
 from gpypi2 import utils
 
+from gpypi2.trove_map import topic_dict
 
 log = logging.getLogger(__name__)
 
@@ -121,6 +124,23 @@ class Ebuild(dict):
             self.parse_metadata()
         else:
             log.error("No metadata or pypi configuration is disabled.")
+
+        if self.options.category == "":
+            # Unless given on the command line,
+            # default category is 'dev-python'
+            self.options.category = 'dev-python'
+
+            topics = [i for i in self['classifiers'] if i[:5] == 'Topic']
+            # Other wise set the category to the one paired with the
+            # most detailed classifier.
+            topic_classifiers = [tuple(i.split(' :: ')) for i in topics]
+            if len(topic_classifiers) > 0:
+                length = 0
+                for i in topic_classifiers:
+                    if len(i) > length:
+                        length = len(i)
+                        tc = i
+                self.options.category = topic_dict[string.join(tc, ' :: ')]
 
     def set_ebuild_vars(self):
         """Calls :meth:`gpypi2.enamer.Enamer.get_vars` and
