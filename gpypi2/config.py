@@ -64,11 +64,12 @@ class Config(dict):
         'background': ("Background of terminal when using formatting", str, 'dark'),
         #'pretend': ("Print ebuild to stdout, don't write ebuild file, don't download SRC_URI", bool, False),
         'license': ("Portage license for the ebuild", str, ""),
-        'keywords': ("Portage keywords for ebuild masking", str, "~x86"),
+        'keywords': ("PyPI keywords", str, ""),
         # TODO: homepage will be a list
         'homepage': ("Homepage of the package", str, ""),
         'description': ("Short description of the package", str, ""),
         'long_description': ("Long description of the package", str, ""),
+        'gentoo_keywords': ("Portage keywords for ebuild masking", str, "~x86"),
         # metadata
         'metadata_disable': ("Disable metadata generation", bool, False),
         'metadata_use_echangelog_user': ("Use ECHANGELOG_USER", bool, False),

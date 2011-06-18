@@ -98,7 +98,7 @@ class Ebuild(dict):
             'inherit': set(['distutils']),
             'gpypi_version': __version__,
             'year': date.today().year,
-            'keywords': PortageUtils.get_keyword(),
+            'gentoo_keywords': PortageUtils.get_keyword(),
         }
         super(Ebuild, self).__init__(d)
         # TODO: use Config rather
