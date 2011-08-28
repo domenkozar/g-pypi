@@ -30,11 +30,11 @@ Development version
 
 ::
 
-    $ sudo pip install http://bitbucket.org/iElectric/g-pypi2/get/tip.zip
+    $ sudo pip install https://github.com/iElectric/g-pypi/zipball/master
 
 or::
 
-    $ sudo easy_install http://bitbucket.org/iElectric/g-pypi2/get/tip.zip
+    $ sudo easy_install https://github.com/iElectric/g-pypi/zipball/master
 
 
 Getting started

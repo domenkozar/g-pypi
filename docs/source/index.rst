@@ -12,8 +12,8 @@
     :synopsis: g-pypi2 manages ebuilds for Gentoo Linux using information in PyPi (Python Package Index)
 
 :Author: Domen Kožar <domen@dev.si>
-:Source code: `Bitbucket.org source browser <http://bitbucket.org/iElectric/g-pypi2/src>`_
-:Bug tracker: `Bitbucket.org issues <http://bitbucket.org/iElectric/g-pypi2/issues?status=new&status=open>`_
+:Source code: `Github.com source browser <https://github.com/iElectric/g-pypi>`_
+:Bug tracker: `Github.com issues <https://github.com/iElectric/g-pypi/issues>`_
 :Generated: |today|
 :License: Simplified BSD (2-clause)
 :Version: |release|
