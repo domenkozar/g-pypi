@@ -25,6 +25,7 @@ except ImportError:
 # TODO: find more clean way
 sys.path.insert(0, "/usr/lib/gentoolkit/pym")
 import gentoolkit
+import gentoolkit.query
 
 from gpypi2.exc import *
 
@@ -132,7 +133,7 @@ class PortageUtils(object):
         True
 
         """
-        pkgs = gentoolkit.find_packages(cat_pkg)
+        pkgs = gentoolkit.query.Query(cat_pkg).find()
         if len(pkgs):
             return True
         else:
