@@ -48,8 +48,8 @@
     :command:`gpypi2` was started as part of `Google Summer of Code 2010 <http://code.google.com/soc>`_
     by *Domen Kožar*, mentored by *Jesus Rivero*.
 
-    :command:`gpypi2` is not meant to be a `Gentoo developer replacment <http://www.gentoo.org/proj/en/devrel/roll-call/userinfo.xml>`_.
-    On the contrary, it's goal is to make his/hers life easier.
+    :command:`gpypi2` is not meant to be a `Gentoo developer replacement <http://www.gentoo.org/proj/en/devrel/roll-call/userinfo.xml>`_.
+    On the contrary, it's goal is to make his (hers) life easier.
 
 .. toctree::
     :maxdepth: 3
