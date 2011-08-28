@@ -1,13 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import sys
-import os
-
 from setuptools import setup, find_packages
 from distutils.command.install_data import install_data
 
 from gpypi2.sdist_ebuild import sdist_ebuild
+
 
 class post_install(install_data):
     def run(self):
@@ -48,7 +46,8 @@ setup(name='gpypi2',
         'pygments',
         'argparse',
         'jaxml>=3.02',
-        'metagen', #metadata.xml
+        'metagen',  # metadata.xml
+        'sphinxcontrib-googleanalytics',
     ],
     tests_require=[
         'nose',
@@ -56,9 +55,6 @@ setup(name='gpypi2',
         'mock',
         'ScriptTest',
     ],
-    extras_require={
-        'docs': ["Sphinx", "sphinxcontrib-googleanalytics"],
-    },
     entry_points={
         'console_scripts': ['gpypi2 = gpypi2.cli:main']
     },
