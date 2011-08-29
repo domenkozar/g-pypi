@@ -17,7 +17,7 @@ def load_model(dotted_name):
 
     Example::
 
-        >>> load_model('gpypi2.utils:import_path') # doctest: +ELLIPSIS
+        >>> load_model('gpypi.utils:import_path') # doctest: +ELLIPSIS
         <function import_path at 0x...>
 
     """

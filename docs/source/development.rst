@@ -8,7 +8,7 @@ Workflow of creating an ebuild
     #. PyPi is queried for an package with coresponding version (if no version is given,
        highest available is used)
 
-    #. PyPi metadata is collected, and :meth:`gpypi2.enamer.Enamer.get_vars` is used to collect
+    #. PyPi metadata is collected, and :meth:`gpypi.enamer.Enamer.get_vars` is used to collect
        common ebuild variables
 
     #. Initial ebuild is written to overlay with :term:`SRC_URI`
@@ -25,14 +25,14 @@ Workflow of creating an ebuild
 How are :term:`PV`, :term:`PN`, :term:`MY_PV`, :term:`MY_PN` and :term:`SRC_URI` determined?
 **********************************************************************************************
 
-All the work is done by :meth:`gpypi2.enamer.Enamer.get_vars`. Specifically:
+All the work is done by :meth:`gpypi.enamer.Enamer.get_vars`. Specifically:
 
-    * :term:`PV` and :term:`MY_PV` in :meth:`gpypi2.enamer.Enamer.parse_pv`
-    * :term:`PN` and :term:`MY_PN` in :meth:`gpypi2.enamer.Enamer.parse_pn`
-    * :term:`SRC_URI` and :term:`HOMEPAGE` in :class:`gpypi2.enamer.SrcUriNamer`
+    * :term:`PV` and :term:`MY_PV` in :meth:`gpypi.enamer.Enamer.parse_pv`
+    * :term:`PN` and :term:`MY_PN` in :meth:`gpypi.enamer.Enamer.parse_pn`
+    * :term:`SRC_URI` and :term:`HOMEPAGE` in :class:`gpypi.enamer.SrcUriNamer`
 
 
-Tests against live PyPi -- :mod:`gpypi2.tests.test_pypi`
+Tests against live PyPi -- :mod:`gpypi.tests.test_pypi`
 *********************************************************
 
 This module runs numerous tests against whole PyPI. It should be run manually, 

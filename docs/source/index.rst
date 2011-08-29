@@ -1,15 +1,15 @@
-.. g-pypi2 documentation master file, created by
+.. g-pypi documentation master file, created by
    sphinx-quickstart on Thu May 13 09:07:15 2010.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-:mod:`gpypi2` -- Welcome to g-pypi2's documentation!
+:mod:`gpypi` -- Welcome to g-pypi's documentation!
 ====================================================
 
 .. moduleauthor:: Domen Kožar [iElectric] <domen@dev.si>
-.. module:: gpypi2
+.. module:: gpypi
     :platform: Everything that Gentoo supports.
-    :synopsis: g-pypi2 manages ebuilds for Gentoo Linux using information in PyPi (Python Package Index)
+    :synopsis: g-pypi manages ebuilds for Gentoo Linux using information in PyPi (Python Package Index)
 
 :Author: Domen Kožar <domen@dev.si>
 :Source code: `Github.com source browser <https://github.com/iElectric/g-pypi>`_
@@ -42,13 +42,13 @@
 
 .. topic:: Overview
 
-    :command:`gpypi2` is a command line tool for creating `Gentoo portage ebuilds <http://en.wikipedia.org/wiki/Ebuild>`_
+    :command:`gpypi` is a command line tool for creating `Gentoo portage ebuilds <http://en.wikipedia.org/wiki/Ebuild>`_
     from `Python Package Index <http://pypi.python.org/pypi>`_.
 
-    :command:`gpypi2` was started as part of `Google Summer of Code 2010 <http://code.google.com/soc>`_
+    :command:`gpypi` was started as part of `Google Summer of Code 2010 <http://code.google.com/soc>`_
     by *Domen Kožar*, mentored by *Jesus Rivero*.
 
-    :command:`gpypi2` is not meant to be a `Gentoo developer replacement <http://www.gentoo.org/proj/en/devrel/roll-call/userinfo.xml>`_.
+    :command:`gpypi` is not meant to be a `Gentoo developer replacement <http://www.gentoo.org/proj/en/devrel/roll-call/userinfo.xml>`_.
     On the contrary, it's goal is to make his (hers) life easier.
 
 .. toctree::

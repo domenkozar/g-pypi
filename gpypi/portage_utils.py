@@ -27,7 +27,7 @@ sys.path.insert(0, "/usr/lib/gentoolkit/pym")
 import gentoolkit
 import gentoolkit.query
 
-from gpypi2.exc import *
+from gpypi.exc import *
 
 
 log = logging.getLogger(__name__)
@@ -67,7 +67,7 @@ class PortageUtils(object):
         :param overlay_name: Name of the overlay
         :returns: Portage overlay path
         :rtype: string
-        :raises: :exc:`gpypi2.exc.GPyPiOverlayDoesNotExist`
+        :raises: :exc:`gpypi.exc.GPyPiOverlayDoesNotExist`
 
         **Example:**
         """
@@ -147,7 +147,7 @@ class PortageUtils(object):
         :param ebuild_path: full path to ebuild
         :type ebuild_path: string
         :returns: None if succeed, raises OSError if fails to unpack
-        :raises: :exc:`gpypi2.exc.GPyPiCouldNotUnpackEbuild`
+        :raises: :exc:`gpypi.exc.GPyPiCouldNotUnpackEbuild`
 
         .. note::
             We are running "ebuild %s digest setup clean unpack" in bash
@@ -227,7 +227,7 @@ class PortageUtils(object):
         :type overlay: string
         :returns: full directory name
         :rtype: string
-        :raises: :exc:`gpypi2.exc.GPyPiCouldNotCreateEbuildPath`
+        :raises: :exc:`gpypi.exc.GPyPiCouldNotCreateEbuildPath`
 
         **Example:**
 

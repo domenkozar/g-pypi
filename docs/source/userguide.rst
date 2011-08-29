@@ -9,20 +9,20 @@ Installation
 Stable version
 ----------------
 
-The most recommended way of installing :command:`gpypi2` is through portage.
+The most recommended way of installing :command:`gpypi` is through portage.
 Portage will handle all of dependencies and make sure you install stable version.
 
 ::
     
-    # sudo emerge -av gpypi2
+    # sudo emerge -av gpypi
 
 Download and install directly through :term:`PyPi`::
 
-    $ sudo easy_install gpypi2
+    $ sudo easy_install gpypi
 
 or::
 
-    $ sudo pip install gpypi2
+    $ sudo pip install gpypi
 
 
 Development version
@@ -40,10 +40,10 @@ or::
 Getting started
 ***************
 
-:command:`gpypi2` is a command line tool with vision to make
+:command:`gpypi` is a command line tool with vision to make
 Gentoo developers life easier. To create an ebuild and its dependencies::
 
-    $ sudo gpypi2 create --overlay sunrise pylons
+    $ sudo gpypi create --overlay sunrise pylons
     * Generating ebuild: Jinja2 2.5
     * Your ebuild is here: /usr/local/portage/dev-python/jinja2/jinja2-2.5.ebuild
     * Dependency needed: Babel
@@ -59,8 +59,8 @@ Gentoo developers life easier. To create an ebuild and its dependencies::
 
 Usage should be pretty self explanatory through help::
 
-    $ sudo gpypi2 -h
-    usage: gpypi2 [-h] [-v] {create,sync,install,echo} ...
+    $ sudo gpypi -h
+    usage: gpypi [-h] [-v] {create,sync,install,echo} ...
 
     Builds ebuilds from PyPi.
 
@@ -76,10 +76,10 @@ Usage should be pretty self explanatory through help::
         sync                Populate all packages from pypi into an overlay
 
 
-and most of the time one will use the :command:`pypi2 create` command::
+and most of the time one will use the :command:`gpypi create` command::
 
-    $ sudo gpypi2 create -h
-    usage: gpypi2 create [-h] [-P PN] [-V PV] [--MY-PV MY_PV] [--MY-PN MY_PN]
+    $ sudo gpypi create -h
+    usage: gpypi create [-h] [-P PN] [-V PV] [--MY-PV MY_PV] [--MY-PN MY_PN]
                          [--MY-P MY_P] [--homepage HOMEPAGE] [--keywords KEYWORDS]
                          [--license LICENSE] [--description DESCRIPTION]
                          [--long-description LONG_DESCRIPTION] [-u URI]
@@ -159,8 +159,8 @@ and most of the time one will use the :command:`pypi2 create` command::
 Creating ebuild from source of Python package with distutils
 ****************************************************************
 
-:mod:`gpypi2` supports not also querying :term:`PyPi` but also creating an ebuild with
-help of distutils. Configuration is done when you first run :mod:`gpypi2`. ``cd`` to
+:mod:`gpypi` supports not also querying :term:`PyPi` but also creating an ebuild with
+help of distutils. Configuration is done when you first run :mod:`gpypi`. ``cd`` to
 your package and just do::
 
     python setup.py sdist_ebuild
@@ -171,14 +171,14 @@ your package and just do::
 Configuration
 **************************
 
-.. currentmodule:: gpypi2.config
+.. currentmodule:: gpypi.config
 .. highlight:: ini
 
-:mod:`gpypi2` offers configuration based on multiple sources. Currently supported sources are: :meth:`Config.from_pypi`, :meth:`Config.from_setup_py`, :meth:`Config.from_argparse` and :meth:`Config.from_ini`.
+:mod:`gpypi` offers configuration based on multiple sources. Currently supported sources are: :meth:`Config.from_pypi`, :meth:`Config.from_setup_py`, :meth:`Config.from_argparse` and :meth:`Config.from_ini`.
 
 Configuration API lets you choose what source is used and what priority it has relative to other source providers. Here is a complete list of supported configuration options that :class:`Config` can provide:
 
-.. literalinclude:: ../../gpypi2/config.py
+.. literalinclude:: ../../gpypi/config.py
     :language: python
     :start-after: allowed_options = {
     :end-before: }
@@ -190,7 +190,7 @@ Configuration API lets you choose what source is used and what priority it has r
 :class:`ConfigManager` is a class that handles multiple :class:`Config` instances. When a value is retrieved from :class:`ConfigManager`, it is loaded from :class:`Config` instances located in :attr:`ConfigManager.configs` `(dict)`. Order is specified as ``use`` parameter to :class:`ConfigManager`.
 
 
-When :mod:`gpypi2` is first time used, it will create ``.ini`` configuration file at ``/etc/gpypi2``. Further usage will load the file with :meth:`ConfigManager.load_from_ini`. Default configuration file will look something like this::
+When :mod:`gpypi` is first time used, it will create ``.ini`` configuration file at ``/etc/gpypi``. Further usage will load the file with :meth:`ConfigManager.load_from_ini`. Default configuration file will look something like this::
 
 
     [config]
@@ -219,7 +219,7 @@ You will notice the ``use`` parameter in ``config_manager`` section. As already 
 
 The last option not yet mentioned is ``questionnaire_options``. The question is, what happens when none of :class:`Config` sources provide the config value we need? The behavior is specified with ``questionnaire_options``. If configuration option is listed in ``questionnaire_options``, :class:`Questionnaire` is used to interactively request developer for input through shell. Otherwise, default is used (specified in :attr:`Config.allowed_options` tuple).
 
-Most of :attr:`ConfigManager.configs` are populated in :mod:`gpypi2.cli` module.
+Most of :attr:`ConfigManager.configs` are populated in :mod:`gpypi.cli` module.
 
 .. note::
     

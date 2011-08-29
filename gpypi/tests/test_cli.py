@@ -8,8 +8,8 @@ import unittest2
 import mock
 from pkg_resources import parse_requirements
 
-from gpypi2.cli import *
-from gpypi2.tests import *
+from gpypi.cli import *
+from gpypi.tests import *
 
 
 class TestGPyPI(BaseTestCase):

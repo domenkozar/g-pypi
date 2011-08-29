@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# g-pypi2 documentation build configuration file, created by
+# g-pypi documentation build configuration file, created by
 # sphinx-quickstart on Thu May 13 09:07:15 2010.
 #
 # This file is execfile()d with the current directory set to its containing dir.
@@ -39,7 +39,7 @@ source_encoding = 'utf-8'
 master_doc = 'index'
 
 # General information about the project.
-project = u'g-pypi2'
+project = u'g-pypi'
 copyright = u'2010, Domen Kožar'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -158,7 +158,7 @@ html_static_path = ['_static']
 #html_file_suffix = ''
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'g-pypi2doc'
+htmlhelp_basename = 'g-pypidoc'
 
 
 # -- Options for LaTeX output --------------------------------------------------
@@ -172,7 +172,7 @@ htmlhelp_basename = 'g-pypi2doc'
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
-  ('index', 'g-pypi2.tex', u'g-pypi2 Documentation',
+  ('index', 'g-pypi.tex', u'g-pypi Documentation',
    u'Domen Kožar', 'manual'),
 ]
 

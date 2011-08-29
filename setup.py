@@ -4,20 +4,18 @@
 from setuptools import setup, find_packages
 from distutils.command.install_data import install_data
 
-from gpypi2.sdist_ebuild import sdist_ebuild
-
 
 class post_install(install_data):
     def run(self):
         install_data.run(self)
 
         # register sdist_ebuild command
+        from gpypi.sdist_ebuild import sdist_ebuild
         sdist_ebuild.register()
 
-version = '0.1'
 
-setup(name='gpypi2',
-    version=version,
+setup(name='g-pypi',
+    version='0.1',
     description="Manages ebuilds for Gentoo Linux using information from Python Package Index",
     long_description="""More at http://g-pypi.readthedocs.org/en/latest/""",
     keywords='gentoo linux distribution ebuild package pypi',
@@ -56,6 +54,6 @@ setup(name='gpypi2',
         'ScriptTest',
     ],
     entry_points={
-        'console_scripts': ['gpypi2 = gpypi2.cli:main']
+        'console_scripts': ['gpypi = gpypi.cli:main']
     },
 )

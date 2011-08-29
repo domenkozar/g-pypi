@@ -25,7 +25,7 @@ class Workflow(object):
     """Abstract class for workflow actions.
 
     :param config_manager: Options to be used
-    :type config_manager: :class:`gpypi2.config.ConfigManager` instance
+    :type config_manager: :class:`gpypi.config.ConfigManager` instance
     :param ebuild_dir: Path to ebuilds directory
     :type ebuild_dir: string
 

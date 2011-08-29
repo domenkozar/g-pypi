@@ -3,144 +3,144 @@ Python API
 
 .. highlight: python
 
-:mod:`gpypi2` -- Main package 
+:mod:`gpypi` -- Main package 
 *****************************
 
-.. automodule:: gpypi2
+.. automodule:: gpypi
 
-:mod:`gpypi2.sdist_ebuild` -- Distutils command
+:mod:`gpypi.sdist_ebuild` -- Distutils command
 ====================================================
 
-.. automodule:: gpypi2.sdist_ebuild
+.. automodule:: gpypi.sdist_ebuild
    :members:
    :undoc-members:
    :show-inheritance:
 
-:mod:`gpypi2.cli` -- Command line handling
+:mod:`gpypi.cli` -- Command line handling
 ====================================================
 
-.. automodule:: gpypi2.cli
+.. automodule:: gpypi.cli
    :members:
    :undoc-members:
    :show-inheritance:
 
-:mod:`gpypi2.config` -- Configuration handling
+:mod:`gpypi.config` -- Configuration handling
 ====================================================
 
-.. automodule:: gpypi2.config
+.. automodule:: gpypi.config
    :members:
    :undoc-members:
    :show-inheritance:
 
-:mod:`gpypi2.ebuild` -- Ebuild generation module
+:mod:`gpypi.ebuild` -- Ebuild generation module
 =========================================================
 
-.. automodule:: gpypi2.ebuild
+.. automodule:: gpypi.ebuild
    :members:
    :undoc-members:
    :show-inheritance:
 
-:mod:`gpypi2.enamer` -- Utilities for metadata conversion
+:mod:`gpypi.enamer` -- Utilities for metadata conversion
 =========================================================
 
-.. automodule:: gpypi2.enamer
+.. automodule:: gpypi.enamer
    :members:
    :undoc-members:
    :inherited-members:
    :show-inheritance:
 
-:mod:`gpypi2.exc` -- :mod:`gpypi2` specific Exceptions
+:mod:`gpypi.exc` -- :mod:`gpypi` specific Exceptions
 =========================================================
 
-.. automodule:: gpypi2.exc
+.. automodule:: gpypi.exc
    :members:
    :undoc-members:
    :show-inheritance:
 
-:mod:`gpypi2.portage_utils` -- Portage utilities
+:mod:`gpypi.portage_utils` -- Portage utilities
 =========================================================
 
-.. automodule:: gpypi2.portage_utils
+.. automodule:: gpypi.portage_utils
    :members:
    :undoc-members:
    :inherited-members:
    :show-inheritance:
 
-:mod:`gpypi2.workflow` -- Generate manifest, metadata, changelog ...
+:mod:`gpypi.workflow` -- Generate manifest, metadata, changelog ...
 =====================================================================
 
-.. automodule:: gpypi2.workflow
+.. automodule:: gpypi.workflow
    :members:
    :undoc-members:
    :inherited-members:
    :show-inheritance:
 
 
-:mod:`gpypi2.tests` -- Unittests package
+:mod:`gpypi.tests` -- Unittests package
 ****************************************
 
-.. automodule:: gpypi2.tests
+.. automodule:: gpypi.tests
 
-:mod:`gpypi2.tests.test_sdist_ebuild`
+:mod:`gpypi.tests.test_sdist_ebuild`
 =====================================
 
-.. automodule:: gpypi2.tests.test_sdist_ebuild
+.. automodule:: gpypi.tests.test_sdist_ebuild
    :members:
    :undoc-members:
    :show-inheritance:
 
-:mod:`gpypi2.tests.test_cli`
+:mod:`gpypi.tests.test_cli`
 =====================================
 
-.. automodule:: gpypi2.tests.test_cli
+.. automodule:: gpypi.tests.test_cli
    :members:
    :undoc-members:
    :show-inheritance:
 
-:mod:`gpypi2.tests.test_config`
+:mod:`gpypi.tests.test_config`
 =====================================
 
-.. automodule:: gpypi2.tests.test_config
+.. automodule:: gpypi.tests.test_config
    :members:
    :undoc-members:
    :show-inheritance:
 
-:mod:`gpypi2.tests.test_ebuild`
+:mod:`gpypi.tests.test_ebuild`
 =====================================
 
-.. automodule:: gpypi2.tests.test_ebuild
+.. automodule:: gpypi.tests.test_ebuild
    :members:
    :undoc-members:
    :show-inheritance:
 
-:mod:`gpypi2.tests.test_enamer`
+:mod:`gpypi.tests.test_enamer`
 =====================================
 
-.. automodule:: gpypi2.tests.test_enamer
+.. automodule:: gpypi.tests.test_enamer
    :members:
    :undoc-members:
    :show-inheritance:
 
-:mod:`gpypi2.tests.test_portage_utils`
+:mod:`gpypi.tests.test_portage_utils`
 ==========================================
 
-.. automodule:: gpypi2.tests.test_portage_utils
+.. automodule:: gpypi.tests.test_portage_utils
    :members:
    :undoc-members:
    :show-inheritance:
 
-:mod:`gpypi2.tests.test_pypi`
+:mod:`gpypi.tests.test_pypi`
 =====================================
 
-.. automodule:: gpypi2.tests.test_pypi
+.. automodule:: gpypi.tests.test_pypi
    :members:
    :undoc-members:
    :show-inheritance:
 
-:mod:`gpypi2.tests.test_workflow`
+:mod:`gpypi.tests.test_workflow`
 =====================================
 
-.. automodule:: gpypi2.tests.test_workflow
+.. automodule:: gpypi.tests.test_workflow
    :members:
    :undoc-members:
    :show-inheritance:

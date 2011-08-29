@@ -5,9 +5,9 @@ import os
 import tempfile
 import shutil
 
-from gpypi2.portage_utils import *
-from gpypi2.tests import *
-from gpypi2.exc import *
+from gpypi.portage_utils import *
+from gpypi.tests import *
+from gpypi.exc import *
 
 import mocker
 

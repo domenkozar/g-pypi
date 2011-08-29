@@ -1,7 +1,7 @@
 include README LICENSE
 graft docs
 prune docs/build
-graft gpypi2
-prune gpypi2/.ropeproject
+graft gpypi
+prune gpypi/.ropeproject
 graft tests
 global-exclude *pyc

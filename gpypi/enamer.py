@@ -16,8 +16,8 @@ import os
 
 from portage import pkgsplit
 
-from gpypi2.portage_utils import PortageUtils
-from gpypi2.exc import *
+from gpypi.portage_utils import PortageUtils
+from gpypi.exc import *
 
 
 log = logging.getLogger(__name__)

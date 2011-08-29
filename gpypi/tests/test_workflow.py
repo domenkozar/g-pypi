@@ -7,9 +7,9 @@ import logging
 import shutil
 import unittest2
 
-from gpypi2.workflow import *
-from gpypi2.config import *
-from gpypi2.tests import *
+from gpypi.workflow import *
+from gpypi.config import *
+from gpypi.tests import *
 
 
 class TestWorkflow(BaseTestCase):

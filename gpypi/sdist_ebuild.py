@@ -19,7 +19,7 @@ class sdist_ebuild(Command):
     user_options = [
         ('config-file=', 'c',
          "GPyPi configuration file "
-         "[default: /etc/gpypi2]"),
+         "[default: /etc/gpypi]"),
         ('dist-dir=', 'd',
          "directory to put the source distribution archive(s) in "
          "[default: dist]"),
@@ -36,7 +36,7 @@ class sdist_ebuild(Command):
 
     def finalize_options (self):
         if self.config_file is None:
-            self.config_file = "/etc/gpypi2"
+            self.config_file = "/etc/gpypi"
         if self.dist_dir is None:
             self.dist_dir = "dist"
 
@@ -45,7 +45,7 @@ class sdist_ebuild(Command):
 
     @classmethod
     def register(cls):
-        """Writes gpypi2 project into distutils commmand_packages settings."""
+        """Writes gpypi project into distutils commmand_packages settings."""
         conf = SafeConfigParser()
         conf.read(cls.path_to_distutils_conf)
 
@@ -57,17 +57,17 @@ class sdist_ebuild(Command):
             conf.add_section('global')
         else:
             pkg = d.get_command_packages()
-        if 'gpypi2' not in pkg:
-            pkg.append('gpypi2')
+        if 'gpypi' not in pkg:
+            pkg.append('gpypi')
             conf.set('global', 'command_packages', ','.join(pkg))
             conf.write(open(cls.path_to_distutils_conf, 'w'))
 
     def run(self):
         """"""
         # late import because of setup.py
-        from gpypi2.enamer import Enamer
-        from gpypi2.ebuild import Ebuild
-        from gpypi2.config import Config, ConfigManager
+        from gpypi.enamer import Enamer
+        from gpypi.ebuild import Ebuild
+        from gpypi.config import Config, ConfigManager
 
         # TODO: configure logging (handlers and stuff)
         self.argparse_config.update({

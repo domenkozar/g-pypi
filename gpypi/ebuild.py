@@ -14,7 +14,7 @@
 Creates an ebuild
 
 
-.. currentmodule: gpypi2.ebuild
+.. currentmodule: gpypi.ebuild
 
 """
 
@@ -36,14 +36,13 @@ from pygments.formatters import get_formatter_by_name
 from pkg_resources import parse_requirements
 import setuptools
 
-from gpypi2 import __version__
-from gpypi2.portage_utils import PortageUtils
-from gpypi2.enamer import Enamer
-from gpypi2.workflow import Repoman, Echangelog, Metadata
-from gpypi2.exc import *
-from gpypi2 import utils
-
-from gpypi2.trove_map import topic_dict
+from gpypi import __version__
+from gpypi import utils
+from gpypi.portage_utils import PortageUtils
+from gpypi.enamer import Enamer
+from gpypi.workflow import Repoman, Echangelog, Metadata
+from gpypi.exc import *
+from gpypi.trove_map import topic_dict
 
 log = logging.getLogger(__name__)
 
@@ -53,7 +52,7 @@ class Ebuild(dict):
     """Contains, populates and renders an ebuild.
 
     :param options: Configuration for ebuild
-    :type options: :class:`gpypi2.config.ConfigManager` instance
+    :type options: :class:`gpypi.config.ConfigManager` instance
 
     :attr:`DOC_DIRS` -- Possible locations for documentation
 
@@ -68,7 +67,7 @@ class Ebuild(dict):
     DOC_DIRS = ['doc', 'docs', 'documentation']
     EXAMPLES_DIRS = ['example', 'examples', 'demo', 'demos']
     EBUILD_TEMPLATE = 'ebuild.jinja'
-    EBUILD_TEMPLATE_PACKAGE = 'gpypi2'
+    EBUILD_TEMPLATE_PACKAGE = 'gpypi'
 
     def __init__(self, options):
         self.setup_keywords = {}
@@ -143,7 +142,7 @@ class Ebuild(dict):
                 self.options.category = topic_dict[string.join(tc, ' :: ')]
 
     def set_ebuild_vars(self):
-        """Calls :meth:`gpypi2.enamer.Enamer.get_vars` and
+        """Calls :meth:`gpypi.enamer.Enamer.get_vars` and
         updates instance variables.
 
         """
@@ -193,8 +192,8 @@ class Ebuild(dict):
 
             * determines :term:`DEPEND` / :term:`RDEPEND` on :mod:`setuptools`
 
-        :raises: :exc:`gpypi2.exc.GPyPiNoSetupFile`
-        :raises: :exc:`gpypi2.exc.GPyPiNoDistribution`
+        :raises: :exc:`gpypi.exc.GPyPiNoSetupFile`
+        :raises: :exc:`gpypi.exc.GPyPiNoDistribution`
 
         """
         # save original functions to undo monkeypaching at the end

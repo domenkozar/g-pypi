@@ -11,9 +11,9 @@ import logging
 import mock
 import argparse
 
-from gpypi2.config import *
-from gpypi2.tests import *
-from gpypi2.exc import *
+from gpypi.config import *
+from gpypi.tests import *
+from gpypi.exc import *
 
 
 class TestConfig(BaseTestCase):
@@ -93,7 +93,7 @@ class TestConfigManager(BaseTestCase):
 
         self.assertEqual(Config.allowed_options['overlay'][2], self.mgr.overlay)
 
-    @mock.patch('gpypi2.config.Questionnaire')
+    @mock.patch('gpypi.config.Questionnaire')
     def test_use_questionaire(self, q):
         self.mgr = ConfigManager(['pypi', 'setup_py'], ['category'], q)
         self.mgr.configs['pypi'] = Config.from_pypi({})
@@ -102,7 +102,7 @@ class TestConfigManager(BaseTestCase):
         self.assertEqual([('ask', ('category',), {})], self.mgr.q.method_calls)
         self.assertEqual(1, self.mgr.q.ask.call_count)
 
-    @mock.patch('gpypi2.config.Questionnaire')
+    @mock.patch('gpypi.config.Questionnaire')
     def test_use_questionaire_multiple_times(self, q):
         self.mgr = ConfigManager(['pypi', 'setup_py'], ['category'], q)
         self.mgr.configs['pypi'] = Config.from_pypi({})

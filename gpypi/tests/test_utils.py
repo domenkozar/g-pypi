@@ -3,10 +3,10 @@
 
 import os
 
-import gpypi2
-from gpypi2.utils import *
-from gpypi2.tests import *
-from gpypi2.tests import test_ebuild
+import gpypi
+from gpypi.utils import *
+from gpypi.tests import *
+from gpypi.tests import test_ebuild
 
 import mocker
 
@@ -27,10 +27,10 @@ class TestUtils(BaseTestCase):
         self.assertTrue(asbool(True))
 
     def test_load_model(self):
-        self.assertEqual(load_model('gpypi2.utils:asbool'), asbool)
+        self.assertEqual(load_model('gpypi.utils:asbool'), asbool)
         self.assertEqual(load_model(asbool), asbool)
 
     def test_recursivley_find_file(self):
         file_ = recursivley_find_file(os.path.dirname(
-            os.path.abspath(gpypi2.__file__)), 'test_pypi.py')
-        self.assertRegexpMatches(file_, '.+gpypi2/tests/test_pypi.py$')
+            os.path.abspath(gpypi.__file__)), 'test_pypi.py')
+        self.assertRegexpMatches(file_, '.+gpypi/tests/test_pypi.py$')

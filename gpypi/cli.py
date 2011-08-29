@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-Command-line code for :mod:`gpypi2`
+Command-line code for :mod:`gpypi`
 
 """
 
@@ -18,14 +18,14 @@ from yolk.pypi import CheeseShop
 from yolk.yolklib import get_highest_version
 from yolk.setuptools_support import get_download_uri
 
-from gpypi2 import __version__
-from gpypi2.exc import *
-from gpypi2.enamer import Enamer
-from gpypi2.sdist_ebuild import sdist_ebuild
-from gpypi2.config import Config, ConfigManager
-from gpypi2.ebuild import Ebuild
-from gpypi2.portage_utils import PortageUtils
-from gpypi2.utils import PortageFormatter, PortageStreamHandler
+from gpypi import __version__
+from gpypi.exc import *
+from gpypi.enamer import Enamer
+from gpypi.sdist_ebuild import sdist_ebuild
+from gpypi.config import Config, ConfigManager
+from gpypi.ebuild import Ebuild
+from gpypi.portage_utils import PortageUtils
+from gpypi.utils import PortageFormatter, PortageStreamHandler
 
 
 log = logging.getLogger(__name__)
@@ -197,7 +197,7 @@ class CLI(object):
     all commands methods.
 
     :param config: Options to be used when making ebuilds
-    :type config: :class:`gpypi2.config.ConfigManager`
+    :type config: :class:`gpypi.config.ConfigManager`
     :param command: Command name to execute
     :type command: string
 
@@ -263,11 +263,11 @@ class CLI(object):
 
 def main(args=sys.argv[1:]):
     """Parse command-line options and do it.
-    Core function for gpypi2 command.
+    Core function for gpypi command.
 
-    Dispatches commands to :class:`gpypi2.cli.CLI`
+    Dispatches commands to :class:`gpypi.cli.CLI`
     """
-    main_parser = argparse.ArgumentParser(prog='gpypi2',
+    main_parser = argparse.ArgumentParser(prog='gpypi',
         description="Builds ebuilds from PyPi.")
     main_parser.add_argument('-v', '--version', action='version',
         version='%(prog)s ' + __version__)
@@ -304,7 +304,7 @@ def main(args=sys.argv[1:]):
     parser.add_argument('--nocolors', action='store_true', dest='nocolors',
         help=Config.allowed_options['nocolors'][0])
     parser.add_argument("--config-file", action='store', dest="config_file",
-        default="/etc/gpypi2", help="Absolute path to a config file")
+        default="/etc/gpypi", help="Absolute path to a config file")
 
     logging_group = parser.add_mutually_exclusive_group()
     logging_group.add_argument("-q", "--quiet", action='store_true',

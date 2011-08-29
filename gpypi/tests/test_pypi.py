@@ -8,9 +8,9 @@ import unittest2
 
 from yolk.pypi import CheeseShop
 
-from gpypi2.enamer import *
-from gpypi2.cli import *
-from gpypi2.tests import *
+from gpypi.enamer import *
+from gpypi.cli import *
+from gpypi.tests import *
 
 @unittest2.skipIf(not os.environ.get('TEST_LIVE_PYPI', None),
     "set TEST_LIVE_PYPI env variable to test against PyPi")

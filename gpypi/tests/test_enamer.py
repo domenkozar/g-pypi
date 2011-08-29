@@ -14,8 +14,8 @@ Test ``get_vars`` with all types of URI's we can come up with.
 
 import unittest2
 
-from gpypi2.enamer import *
-from gpypi2.tests import *
+from gpypi.enamer import *
+from gpypi.tests import *
 
 
 class TestEnamer(BaseTestCase):

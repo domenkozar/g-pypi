@@ -10,11 +10,11 @@ import tempfile
 import shutil
 from setuptools import Distribution
 
-from gpypi2 import portage_utils
-from gpypi2.sdist_ebuild import *
-from gpypi2.config import *
-from gpypi2.tests import *
-from gpypi2.exc import *
+from gpypi import portage_utils
+from gpypi.sdist_ebuild import *
+from gpypi.config import *
+from gpypi.tests import *
+from gpypi.exc import *
 
 
 class TestSdistEbuild(BaseTestCase):
@@ -36,21 +36,21 @@ class TestSdistEbuild(BaseTestCase):
 
     def test_register_empty(self):
         sdist_ebuild.register()
-        self.assertRegexpMatches(open(self.s).read(), r'^\[global\]\s*command_packages = gpypi2\s*$')
+        self.assertRegexpMatches(open(self.s).read(), r'^\[global\]\s*command_packages = gpypi\s*$')
 
     def test_register_no_global(self):
         with open(self.s, 'w') as f:
             f.write("")
 
         sdist_ebuild.register()
-        self.assertRegexpMatches(open(self.s).read(), r'^\[global\]\s*command_packages = gpypi2\s*$')
+        self.assertRegexpMatches(open(self.s).read(), r'^\[global\]\s*command_packages = gpypi\s*$')
 
     def test_register_with_stuff(self):
         with open(self.s, 'w') as f:
             f.write("[global]\ncommand_packages = stuff,ok")
 
         sdist_ebuild.register()
-        self.assertRegexpMatches(open(self.s).read(), r'^\[global\]\s*command_packages = distutils.command,stuff,ok,gpypi2\s*$')
+        self.assertRegexpMatches(open(self.s).read(), r'^\[global\]\s*command_packages = distutils.command,stuff,ok,gpypi\s*$')
 
     def test_sdist_ebuild(self):
         open(self.s, 'w').write("""[config]\n[config_manager]\nuse= argparse setup_py\n""")

@@ -8,11 +8,11 @@ import unittest2
 import tempfile
 import shutil
 
-from gpypi2 import portage_utils
-from gpypi2.ebuild import *
-from gpypi2.config import *
-from gpypi2.tests import *
-from gpypi2.exc import *
+from gpypi import portage_utils
+from gpypi.ebuild import *
+from gpypi.config import *
+from gpypi.tests import *
+from gpypi.exc import *
 
 
 class TestEbuild(BaseTestCase):
