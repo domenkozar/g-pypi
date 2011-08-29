@@ -9,8 +9,8 @@ from distutils.dist import Distribution
 from ConfigParser import SafeConfigParser, NoOptionError, NoSectionError
 
 
-
 distutils_path = os.path.dirname(os.path.abspath(distutils.__file__))
+
 
 class sdist_ebuild(Command):
     description = "create an ebuild file for Gentoo Linux"
@@ -28,13 +28,13 @@ class sdist_ebuild(Command):
     argparse_config = {
         'overwrite': True,
     }
-    default_format = {'posix': 'ebuild', 'nt': '' }
+    default_format = {'posix': 'ebuild', 'nt': ''}
 
-    def initialize_options (self):
+    def initialize_options(self):
         self.dist_dir = None
         self.config_file = None
 
-    def finalize_options (self):
+    def finalize_options(self):
         if self.config_file is None:
             self.config_file = "/etc/gpypi"
         if self.dist_dir is None:

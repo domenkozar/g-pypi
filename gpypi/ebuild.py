@@ -18,7 +18,6 @@ Creates an ebuild
 
 """
 
-import sys
 import os
 import logging
 import tempfile
@@ -263,7 +262,7 @@ class Ebuild(dict):
         setuptools.setup = temp_setup
         distutils.core.setup = temp_distutils
 
-        # extract metadata 
+        # extract metadata
         if 'setup_py' in self.options.use:
             d = distutils.core.Distribution(self.setup_keywords)
             metadata = Enamer.parse_setup_py(d)
@@ -421,7 +420,7 @@ class Ebuild(dict):
         if self.get('my_p', None):
             self["s"] = "${WORKDIR}/${MY_P}"
         else:
-            pass # ${WORKDIR}/${P}
+            pass  # ${WORKDIR}/${P}
 
     def render(self):
         """Generate ebuild from template"""

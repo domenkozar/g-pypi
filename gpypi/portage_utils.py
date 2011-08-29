@@ -12,7 +12,6 @@ import os
 import commands
 import logging
 
-import portage
 from portage import config as portage_config
 from portage import settings as portage_settings
 try:

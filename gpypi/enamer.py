@@ -301,9 +301,9 @@ class Enamer(object):
 
         if rs_match:
             # e.g. 1.0.dev-r1234
-            major_ver = rs_match.group(1) # 1.0
-            replace_me = rs_match.group(2) #.dev-r
-            rev = rs_match.group(3) #1234
+            major_ver = rs_match.group(1)  # 1.0
+            replace_me = rs_match.group(2)  # .dev-r
+            rev = rs_match.group(3)  # 1234
             pv = major_ver + portage_suffix + rev
             my_pv.append("${PV/%s/%s}" % (portage_suffix, replace_me))
             log.debug("parse_pv: major_ver(%s) replace_me(%s), rev(%s)", major_ver, replace_me, rev)
@@ -598,8 +598,8 @@ class Enamer(object):
         'BSD-2'
         >>> Enamer.convert_license(["License :: OSI Approved :: foobar"])
         ''
-        
         """
+
         if not isinstance(classifiers, list):
             raise ValueError("classifiers should be a list, not %s" % type(classifiers))
         if not isinstance(setup_license, basestring):
@@ -799,7 +799,7 @@ class SrcUriNamer(object):
             log.error('is_uri_online: timeout')
             return False
         log.error('is_uri_online: status(%r)' % resp.status)
-        return resp.status in (302, 200) # HEAD requests return s 302 FOUND when valid
+        return resp.status in (302, 200)  # HEAD requests returns 302 FOUND when valid
 
     def convert_src_uri(self):
         """"""

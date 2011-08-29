@@ -9,7 +9,6 @@ Command-line code for :mod:`gpypi`
 import os
 import sys
 import pdb
-import inspect
 import logging
 
 import argparse
@@ -21,7 +20,6 @@ from yolk.setuptools_support import get_download_uri
 from gpypi import __version__
 from gpypi.exc import *
 from gpypi.enamer import Enamer
-from gpypi.sdist_ebuild import sdist_ebuild
 from gpypi.config import Config, ConfigManager
 from gpypi.ebuild import Ebuild
 from gpypi.portage_utils import PortageUtils
@@ -29,6 +27,7 @@ from gpypi.utils import PortageFormatter, PortageStreamHandler
 
 
 log = logging.getLogger(__name__)
+
 
 class GPyPI(object):
     """
@@ -233,7 +232,6 @@ class CLI(object):
     def sync(self):
         """"""
         pypi = CheeseShop()
-        all_packages = []
         for package in pypi.list_packages():
             (pn, vers) = pypi.query_versions_pypi(package)
             for version in vers:

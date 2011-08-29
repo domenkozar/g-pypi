@@ -27,6 +27,7 @@ def load_model(dotted_name):
         # Assume it's already loaded.
         return dotted_name
 
+
 def import_path(fullpath):
     """Import a file with full path specification. Allows one to
     import from anywhere, something __import__ does not do.
@@ -41,9 +42,10 @@ def import_path(fullpath):
     filename, ext = os.path.splitext(filename)
     sys.path.insert(0, path)
     module = __import__(filename)
-    reload(module) # Might be out of date during tests
+    reload(module)  # Might be out of date during tests
     del sys.path[0]
     return module
+
 
 def asbool(obj):
     """Do everything to consider ``obj`` as  boolean.
@@ -69,12 +71,13 @@ def asbool(obj):
 
 class PortageStreamHandler(logging.StreamHandler):
     """StreamHandler that does not add additional newline"""
+
     def emit(self, record):
         try:
             msg = self.format(record)
             stream = self.stream
-            fs = "%s" # removed trailing newline
-            if not hasattr(types, "UnicodeType"): #if no unicode support...
+            fs = "%s"  # removed trailing newline
+            if not hasattr(types, "UnicodeType"):  # if no unicode support...
                 stream.write(fs % msg)
             else:
                 try:
@@ -108,6 +111,7 @@ class PortageFormatter(logging.Formatter):
         class LoggingOutput(EOutput):
             """"""
             output = None
+
             def _write(self, file, msg):
                 self.output = msg
 
@@ -122,6 +126,7 @@ class PortageFormatter(logging.Formatter):
             output = output + '\n'
 
         return l.output or output
+
 
 def recursivley_find_file(path, filename, in_text=None):
     """Find filename in specified path recursively"""

@@ -21,6 +21,7 @@ from metagen.main import parse_echangelog_variable
 # TODO: argparse params
 log = logging.getLogger(__name__)
 
+
 class Workflow(object):
     """Abstract class for workflow actions.
 

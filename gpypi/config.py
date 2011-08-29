@@ -24,6 +24,7 @@ from gpypi.exc import *
 log = logging.getLogger(__name__)
 HERE = os.path.dirname(os.path.abspath(__file__))
 
+
 class Config(dict):
     """Holds config values retrieved from various sources. To load
     configuration from a source use one of :meth:`from_*` methods.
@@ -139,10 +140,9 @@ class Config(dict):
         return cls(filter(lambda i: i[1] is not None, options.__dict__.iteritems()))
 
     ## validate types
-
     @classmethod
     def validate(cls, name, value):
-        """Validates and parses config value. Will dispatch calls to 
+        """Validates and parses config value. Will dispatch calls to
         subvalidators based on type of the config option.
 
         :param name: key from :attr:`Config.allowed_options`
@@ -222,7 +222,7 @@ class ConfigManager(object):
                 raise GPyPiConfigurationError("ConfigManager could not be setup"
                     ", config order has non-unique member: %s" % config)
         self.use = ['questionnaire'] + use
-        self.questionnaire_options =  questionnaire_options or []
+        self.questionnaire_options = questionnaire_options or []
         self.q = (questionnaire_class or Questionnaire)(self)
         self.configs = {'questionnaire': {}}
 
@@ -278,7 +278,6 @@ class ConfigManager(object):
         if not os.path.exists(path_to_ini):
             shutil.copy(cls.INI_TEMPLATE_PATH, path_to_ini)
             log.info('Config was generated at %s', path_to_ini)
-
 
         config = SafeConfigParser()
         config.read(path_to_ini)
