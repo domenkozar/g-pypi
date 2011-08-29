@@ -129,7 +129,7 @@ class Ebuild(dict):
             # default category is 'dev-python'
             self.options.category = 'dev-python'
 
-            topics = [i for i in self['classifiers'] if i[:5] == 'Topic']
+            topics = [i for i in self.get('classifiers', []) if i[:5] == 'Topic']
             # Other wise set the category to the one paired with the
             # most detailed classifier.
             topic_classifiers = [tuple(i.split(' :: ')) for i in topics]
