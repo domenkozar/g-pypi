@@ -1,7 +1,8 @@
 Changelog
 ---------
 
-**0.1 beta1** (xx.08.2010)
-==========================
+0.3  (2012/06/28)
+=================
 
-* *initial release*
+* initial release after GSOC2010 work
+  [Domen Kožar]

@@ -15,7 +15,7 @@ class post_install(install_data):
 
 
 setup(name='g-pypi',
-    version='0.1',
+    version='0.3',
     description="Manages ebuilds for Gentoo Linux using information from Python Package Index",
     long_description="""More at http://g-pypi.readthedocs.org/en/latest/""",
     keywords='gentoo linux distribution ebuild package pypi',
@@ -46,6 +46,7 @@ setup(name='g-pypi',
         'jaxml>=3.02',
         'metagen',  # metadata.xml
         'sphinxcontrib-googleanalytics',
+        # also needs to install gentoolkit and gentoolkit-dev
     ],
     tests_require=[
         'nose',
