@@ -32,7 +32,7 @@ HOMEPAGE="{{ options.homepage }}"
 ESVN_REPO_URI="{{ esvn_repo_uri }}"
 {% else %}
 {# TODO: SRC_URI="{{ src_uri|join(" ") }}" #}
-SRC_URI="{{ src_uri }}"
+SRC_URI="{{ src_uri|replace("http://pypi.python.org/packages/source/", "mirror://pypi/") }}"
 {% endif %}
 
 LICENSE="{{ options.license }}"

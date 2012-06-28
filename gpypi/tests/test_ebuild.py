@@ -172,6 +172,11 @@ class TestEbuild(BaseTestCase):
         self.ebuild.discover_tests()
         self.assertEqual('nosetests', self.ebuild['tests_method'])
 
+    def test_render_mirror_url(self):
+        self.ebuild['src_uri'] = 'http://pypi.python.org/packages/source/F/Flask/Flask-0.8.tar.gz'
+        self.assertTrue('mirror://pypi/F/Flask/Flask-0.8.tar.gz' in self.ebuild.render())
+
+
     # TODO: assert tests dependencies
 
     def test_discover_normal_tests(self):
