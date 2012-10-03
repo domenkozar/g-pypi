@@ -402,7 +402,8 @@ def main(args=sys.argv[1:]):
     # portage group access must be used for write permission in overlay and for
     # unpacking of ebuilds
     if secpass < 1:
-        main_parser.error('Must be run as root or in group ' + str(portage_gid) )
+        log.warn('Should be run as root or in group ' + str(portage_gid) +
+                ". Expect more problems to come.\n")
 
     config_mgr = ConfigManager.load_from_ini(args.config_file)
     config_mgr.configs['argparse'] = Config.from_argparse(args)
