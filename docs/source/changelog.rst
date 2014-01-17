@@ -1,6 +1,12 @@
 Changelog
 ---------
 
+0.4 (2014/01/17)
+==================
+
+- Switch to EAPI=5, distutils-r1
+  [Noel Burton-Krahn <noel@pistoncloud.com>]
+
 0.3.1 (2012/xx/xx)
 ==================
 

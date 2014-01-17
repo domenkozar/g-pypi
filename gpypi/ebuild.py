@@ -81,6 +81,12 @@ class Ebuild(dict):
         self.env = Environment(
             loader=PackageLoader(self.EBUILD_TEMPLATE_PACKAGE, 'templates'),
             trim_blocks=True)
+
+        import re
+        def replace_re(s, find, replace):
+            return re.sub(find, replace, s)
+        self.env.filters['replace_re'] = replace_re
+        
         self.template = self.env.get_template(self.EBUILD_TEMPLATE)
 
         # Variables that will be passed to the Jinja template
@@ -93,7 +99,7 @@ class Ebuild(dict):
             'slot': '0',
             's': '',
             'tests_method': '',
-            'inherit': set(['distutils']),
+            'inherit': set(['distutils-r1']),
             'gpypi_version': __version__,
             'year': date.today().year,
             'gentoo_keywords': PortageUtils.get_keyword(),

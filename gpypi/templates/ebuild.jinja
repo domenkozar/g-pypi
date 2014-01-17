@@ -8,11 +8,10 @@
     {% endfor %}
 {%- endif %}
 
-EAPI="4"
-SUPPORT_PYTHON_ABIS="1"
-{% if tests_method %}
-DISTUTILS_SRC_TEST="{{ tests_method }}"
-{% endif %}
+EAPI="5"
+
+{# TODO(NBK): determine which version of python this will work with #}
+PYTHON_COMPAT=( python2_7 )
 
 inherit {{ inherit|join(" ") }}
 
@@ -32,7 +31,7 @@ HOMEPAGE="{{ options.homepage }}"
 ESVN_REPO_URI="{{ esvn_repo_uri }}"
 {% else %}
 {# TODO: SRC_URI="{{ src_uri|join(" ") }}" #}
-SRC_URI="{{ src_uri|replace("http://pypi.python.org/packages/source/", "mirror://pypi/") }}"
+SRC_URI="{{ src_uri|replace_re("https?://pypi.python.org/packages/source/", "mirror://pypi/") }}"
 {% endif %}
 
 LICENSE="{{ options.license }}"
@@ -56,19 +55,12 @@ S="{{ s }}"
 PYTHON_MODNAME="{{ python_modname|join(" ") }}"
 {% endif %}
 
-{% if docs_dir or examples_dir %}
-src_install() {
-    distutils_src_install
 {% if docs_dir %}
-    if use doc; then
-        dodoc -r {{ docs_dir }}
-    fi
+DOCS={{ docs_dir }}
 {% endif %}
+
 {% if examples_dir %}
-    if use examples; then
-        insinto /usr/share/doc/"${PF}"/
-        doins -r {{ examples_dir }}
-    fi
+EXAMPLES={{ examples_dir }}
 {% endif %}
-}
-{% endif %}
+
+
