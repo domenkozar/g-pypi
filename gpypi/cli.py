@@ -325,7 +325,7 @@ def main(args=sys.argv[1:]):
         dest="overwrite", help=Config.allowed_options['overwrite'][0])
     create_install_parser.add_argument("--no-deps", action='store_true', dest="no_deps",
         help=Config.allowed_options['no_deps'][0])
-    create_install_parser.add_argument("-c", "--category", action='store',
+    create_install_parser.add_argument("-c", "--category", default='dev-python', action='store',
         dest="category", help=Config.allowed_options['category'][0])
     # TODO: pretend
     #create_install_parser.add_argument("-p", "--pretend", action='store_true',

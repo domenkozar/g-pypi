@@ -34,7 +34,7 @@ class TestEbuild(BaseTestCase):
         portage_utils.ENV['PORTDIR_OVERLAY'] += ' %s' % self.overlay_dir
 
         config = ConfigManager(['pypi', 'ini'])
-        config.configs['ini'] = dict(overwrite=False, overlay='gpypi-tests', up_pn='foobar', up_pv='1.0')
+        config.configs['ini'] = dict(overwrite=False, overlay='gpypi-tests', up_pn='foobar', up_pv='1.0', category='dev-python')
         self.ebuild = Ebuild(config)
         self.ebuild.unpacked_dir = self.s
 

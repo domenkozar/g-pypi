@@ -15,7 +15,7 @@ class post_install(install_data):
 
 
 setup(name='g-pypi',
-    version='0.3',
+    version='0.4',
     description="Manages ebuilds for Gentoo Linux using information from Python Package Index",
     long_description="""More at http://g-pypi.readthedocs.org/en/latest/""",
     keywords='gentoo linux distribution ebuild package pypi',
